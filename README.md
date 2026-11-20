@@ -17,13 +17,14 @@
 - **Atualização automática do Bedrock.** Cada instância consulta a distribuição oficial na inicialização e preserva seu mundo e arquivos próprios durante atualizações.
 - **MineDev Console multi-instância.** Selecione um servidor para ver telemetria, feed e estatísticas; envie comandos e inicie, pare ou reinicie o servidor selecionado.
 - **Backups e restauração por mundo.** Agendamento, retenção e operação autenticada são separados por instância.
+- **Padrões de acesso claros.** A allowlist de jogadores começa desligada; o envio opcional de telemetria do servidor Bedrock à Mojang/Microsoft começa ligado, com controles para ambos.
 
 ## Instalação rápida
 
 1. No Home Assistant OS, abra **Configurações → Aplicativos (ou Add-ons) → Instalar aplicativo → ⋮ → Repositórios**.
 2. Adicione `https://github.com/jcasallecchio/MinecraftRCON-Multi` ou use o botão acima.
-3. Instale **MinecraftRCON Multi**, defina `rcon_token` com pelo menos 32 caracteres e configure os mundos no formulário **Mundos/instâncias**. A configuração inicial já cria a instância `main` na porta UDP 19132.
-4. Inicie o add-on e confira os logs de cada instância. No Minecraft, conecte ao IP do Home Assistant e à porta UDP configurada para o mundo.
+3. Instale **MinecraftRCON Multi**, adicione pelo menos um mundo em **Mundos/instâncias** e defina `rcon_token` com pelo menos 32 caracteres.
+4. Salve, inicie o add-on e confira os logs. No Minecraft, conecte ao IP do Home Assistant e à porta UDP configurada para o mundo.
 
 Veja [configuração, portas e migração](MinecraftRCON/DOCS.md), [acesso remoto com DuckDNS ou DNS](docs/acesso-remoto.md) e [instalação do MineDev](console/README.md).
 
@@ -46,6 +47,7 @@ O MineDev é um painel PHP opcional. Guarde URLs e tokens das instâncias no `.e
 
 - O limite atual é cinco instâncias por add-on. Cada processo Bedrock usa CPU, memória, armazenamento e tráfego próprios; o número suportado na configuração não significa que qualquer host consiga manter cinco mundos carregados com bom desempenho.
 - A lista é lida ao iniciar o add-on. Depois de mudar IDs, mundos ou portas, reinicie o add-on.
+- A lista começa vazia em novas instalações. Cadastre ao menos um mundo antes de iniciar; o add-on não inicia processos Bedrock até essa configuração.
 - A primeira instalação de cada mundo baixa sua própria distribuição Bedrock. Reserve espaço para os arquivos do servidor, mundos e backups.
 - `enable-lan-visibility=false` evita que os mundos disputem os anúncios LAN na mesma rede. Adicione os servidores manualmente no jogo usando IP e porta.
 - Esta é uma cópia independente do projeto [MinecraftRCON](https://github.com/jcasallecchio/MinecraftRCON). Ela não atualiza nem modifica a instalação anterior.

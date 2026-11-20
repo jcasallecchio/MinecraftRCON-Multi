@@ -1,6 +1,6 @@
 {
   "name": "MinecraftRCON Multi",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "slug": "minecraft_rcon_multi",
   "description": "Gerenciador de até cinco servidores Minecraft Bedrock simultâneos com RCON",
   "startup": "services",
@@ -47,6 +47,8 @@
   "schema": {
     "rcon_token": "password?",
     "rcon_allowed_ips": "str?",
+    "allow_list": "bool",
+    "emit_server_telemetry": "bool",
     "backup_interval_hours": "int?",
     "backup_keep_count": "int?",
     "instances": [
@@ -59,13 +61,8 @@
     ]
   },
   "options": {
-    "instances": [
-      {
-        "id": "main",
-        "name": "Abydos",
-        "world_name": "Abydos",
-        "udp_port": 19132
-      }
-    ]
+    "allow_list": false,
+    "emit_server_telemetry": true,
+    "instances": []
   }
 }

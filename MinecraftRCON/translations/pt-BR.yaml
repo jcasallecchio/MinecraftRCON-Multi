@@ -5,6 +5,12 @@ configuration:
   rcon_allowed_ips:
     name: IPs autorizados para a API
     description: Lista opcional de IPs ou CIDRs separados por vírgula. Vazio permite qualquer IP que alcance a API.
+  allow_list:
+    name: Exigir allowlist de jogadores
+    description: Desativado permite a entrada de qualquer jogador. Ative para exigir nomes cadastrados em cada mundo.
+  emit_server_telemetry:
+    name: Enviar telemetria do servidor Bedrock
+    description: Envia telemetria opcional do servidor à Mojang/Microsoft. O MineDev continua usando sua telemetria local com esta opção desligada.
   backup_interval_hours:
     name: Intervalo de backup (horas)
   backup_keep_count:

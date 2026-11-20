@@ -404,14 +404,21 @@ PY
 fi
 
 # --- Inicia servidor ---
-transport_result=$(python3 - "$SERVER_DIR/server.properties" "$BEDROCK_PORT" "$BEDROCK_IPV6_PORT" "$BEDROCK_WORLD_NAME" <<'PY'
+transport_result=$(python3 - "$SERVER_DIR/server.properties" "$BEDROCK_PORT" "$BEDROCK_IPV6_PORT" "$BEDROCK_WORLD_NAME" "${BEDROCK_ALLOW_LIST:-false}" "${BEDROCK_EMIT_SERVER_TELEMETRY:-true}" <<'PY'
 import os
 import stat
 import sys
 from pathlib import Path
 
 properties_path = Path(sys.argv[1])
-settings = {"transport": "nethernet", "server-port": sys.argv[2], "server-portv6": sys.argv[3], "enable-lan-visibility": "false"}
+settings = {
+    "transport": "nethernet",
+    "server-port": sys.argv[2],
+    "server-portv6": sys.argv[3],
+    "enable-lan-visibility": "false",
+    "allow-list": sys.argv[5],
+    "emit-server-telemetry": sys.argv[6],
+}
 if sys.argv[4]:
     settings["level-name"] = sys.argv[4]
 try:
@@ -474,6 +481,7 @@ rotate_server_log() {
 start_and_wait_server() {
   local old_line_count attempt server_ready=false
   rotate_server_log
+  touch "$SERVER_DIR/server.log"
   old_line_count=$(wc -l < "$SERVER_DIR/server.log" 2>/dev/null || printf '0')
   log $YELLOW "Iniciando servidor Minecraft Bedrock..."
   screen -dmS "$SCREEN_SESSION" bash -c "./bedrock_server | tee -a '$SERVER_DIR/server.log' /proc/1/fd/1"

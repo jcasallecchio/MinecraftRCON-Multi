@@ -18,21 +18,31 @@ except (OSError, json.JSONDecodeError) as exc:
     raise SystemExit(f"[manager] Não foi possível ler as opções do add-on: {exc}")
 
 token = options.get("rcon_token", "")
-if not isinstance(token, str) or len(token.strip()) < 32:
-    raise SystemExit("[manager] Configure rcon_token com pelo menos 32 caracteres antes de iniciar as instâncias.")
-if isinstance(options.get("instances"), list):
-    instances = options["instances"]
+configured_instances = options.get("instances")
+if isinstance(configured_instances, list) and configured_instances:
+    instances = configured_instances
 elif isinstance(options.get("instances_json"), str) and options["instances_json"].strip():
     # Compatibilidade com configurações criadas na versão 0.1.0.
     try:
         instances = json.loads(options["instances_json"])
     except (TypeError, json.JSONDecodeError) as exc:
         raise SystemExit(f"[manager] A configuração antiga instances_json não contém uma lista JSON válida: {exc}")
+elif isinstance(configured_instances, list):
+    instances = configured_instances
 else:
-    instances = [{"id": "main", "name": "Abydos", "world_name": "Abydos", "udp_port": 19132}]
+    instances = []
 
-if not isinstance(instances, list) or not 1 <= len(instances) <= 5:
+if not isinstance(instances, list) or len(instances) > 5:
     raise SystemExit("[manager] Configure de 1 a 5 instâncias no formulário do add-on.")
+if not instances:
+    sys.exit(0)
+if not isinstance(token, str) or len(token.strip()) < 32:
+    raise SystemExit("[manager] Configure rcon_token com pelo menos 32 caracteres antes de iniciar as instâncias.")
+
+allow_list = options.get("allow_list", False)
+emit_telemetry = options.get("emit_server_telemetry", True)
+if not isinstance(allow_list, bool) or not isinstance(emit_telemetry, bool):
+    raise SystemExit("[manager] allow_list e emit_server_telemetry precisam ser opções booleanas.")
 
 seen_ids, seen_ports = set(), set()
 for index, item in enumerate(instances):
@@ -57,7 +67,7 @@ for index, item in enumerate(instances):
         raise SystemExit(f"[manager] A faixa de portas {port}-{port + 1} conflita com outra instância ou com uma API TCP.")
     seen_ids.add(instance_id)
     seen_ports.update((port, port + 1))
-    print("\t".join((instance_id, name.strip(), world_name.strip(), str(port), str(19233 + index))))
+    print("\t".join((instance_id, name.strip(), world_name.strip(), str(port), str(19233 + index), str(allow_list).lower(), str(emit_telemetry).lower())))
 PY
 then
   log "Configuração inválida. Revise a lista de instâncias nas opções do add-on."
@@ -72,7 +82,7 @@ shutdown() {
 }
 trap 'shutdown; exit 0' TERM INT
 
-while IFS=$'\t' read -r instance_id display_name world_name udp_port api_port; do
+while IFS=$'\t' read -r instance_id display_name world_name udp_port api_port allow_list emit_telemetry; do
   [[ -n "$instance_id" ]] || continue
   instance_dir="$INSTANCE_ROOT/$instance_id"
   mkdir -p "$instance_dir"
@@ -83,14 +93,16 @@ while IFS=$'\t' read -r instance_id display_name world_name udp_port api_port; d
   BEDROCK_PORT="$udp_port" \
   BEDROCK_IPV6_PORT="$((udp_port + 1))" \
   BEDROCK_WORLD_NAME="$world_name" \
+  BEDROCK_ALLOW_LIST="$allow_list" \
+  BEDROCK_EMIT_SERVER_TELEMETRY="$emit_telemetry" \
   RCON_PORT="$api_port" \
     /instance.sh &
   INSTANCE_PIDS+=("$!")
 done < /tmp/minecraft-instances.tsv
 
 if ((${#INSTANCE_PIDS[@]} == 0)); then
-  log "Nenhuma instância foi iniciada."
-  exit 1
+  log "Nenhuma instância configurada. Adicione um mundo na configuração do add-on e inicie-o novamente."
+  exit 0
 fi
 
 log "Gerenciador ativo com ${#INSTANCE_PIDS[@]} instância(s)."

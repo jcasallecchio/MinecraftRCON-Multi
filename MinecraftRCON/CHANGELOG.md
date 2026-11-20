@@ -1,5 +1,11 @@
 # Histórico de versões
 
+## 0.3.0 — Padrões de instalação inicial
+- Novos usuários começam com a lista de instâncias vazia; o add-on aguarda configuração sem entrar em ciclo de falha.
+- Desativa a allowlist por padrão, com opção para ativá-la nas configurações.
+- Ativa a telemetria oficial do servidor Bedrock por padrão, com opção para desativá-la.
+- Cria `server.log` antes de iniciar o Bedrock para evitar avisos de arquivo ausente no primeiro boot.
+
 ## 0.2.0 — Formulário multi-instância
 - Substitui o campo de texto JSON por uma lista nativa de instâncias com campos editáveis na configuração do add-on.
 - Adiciona rótulos e descrições em português e inglês.

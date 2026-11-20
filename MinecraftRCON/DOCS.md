@@ -14,7 +14,7 @@ Este add-on gerencia de uma a cinco instâncias Bedrock simultâneas. Cada mundo
 1. Adicione `https://github.com/jcasallecchio/MinecraftRCON-Multi` em **Configurações → Aplicativos → ⋮ → Repositórios**.
 2. Instale **MinecraftRCON Multi**.
 3. Na configuração do add-on, defina `rcon_token` com um segredo aleatório de pelo menos 32 caracteres. Guarde-o em um gerenciador de senhas.
-4. Em **Mundos/instâncias**, configure de 1 a 5 entradas usando os campos do formulário. Para adicionar outro mundo, use a ação de adicionar item da lista; não é necessário escrever JSON.
+4. Em **Mundos/instâncias**, configure de 1 a 5 entradas usando os campos do formulário. A lista começa vazia; para adicionar um mundo, use a ação de adicionar item. Não é necessário escrever JSON.
 5. Confira os logs. Na primeira inicialização, cada mundo baixa sua cópia do servidor Bedrock. Aguarde a mensagem de servidor pronto para cada instância.
 6. Adicione manualmente no Minecraft o IP local do Home Assistant e a porta UDP de jogo da instância.
 
@@ -48,6 +48,10 @@ Use portas UDP distintas sem sobreposição: cada instância usa `udp_port` para
 Não configure pares UDP que se sobreponham. O add-on valida IDs, nomes, quantidade e colisões de portas antes de iniciar. A ordem da lista define a porta TCP RCON; mantenha a ordem sincronizada com o `.env` do MineDev. Depois de alterar a lista, salve e reinicie o add-on. IDs definem as pastas persistentes dos mundos; mantenha-os estáveis.
 
 Se você instalou a versão `0.1.0`, converta cada objeto que estava em `instances_json` em um item da lista visual. Preserve `id`, `name`, `world_name` e `udp_port`; o código ainda lê a opção antiga se a nova lista não tiver sido criada.
+
+Por padrão, **Exigir allowlist de jogadores** fica desligado e qualquer jogador pode entrar. A allowlist é de gamertags, não de IPs. Se ativar, use o console RCON para adicionar cada jogador, por exemplo `allowlist add JCasallecchio`. A opção `rcon_allowed_ips` é separada e restringe quem pode chamar a API do console.
+
+**Enviar telemetria do servidor Bedrock** vem ligado; isso permite o envio opcional de dados do servidor à Mojang/Microsoft. Essa opção é independente da telemetria local do MineDev e pode ser desligada aqui.
 
 ## Arquivos de cada mundo
 
@@ -120,6 +124,7 @@ Exemplo: se a instância `creative` usa UDP 19134, o jogador entra pelo hostname
 - Para backup de mundo em execução, a cópia usa `save hold`/`save resume`, que requer `allow-cheats=true`; avalie impacto em conquistas.
 - Os IDs têm dados persistidos sem expiração para estatísticas, até sete dias/5.000 eventos para o feed e rotação de logs.
 - Se uma instância não iniciar, consulte o log do add-on e a pasta correspondente. Erros de JSON, IDs duplicados e portas sobrepostas encerram a validação antes de abrir processos Bedrock.
+- Se a lista estiver vazia, o add-on registra que não há instâncias configuradas e encerra normalmente. Adicione um mundo na configuração e inicie o add-on.
 - Se uma instância falhar, o add-on é encerrado para que o Supervisor recupere o conjunto em estado consistente.
 
 ## Opções
@@ -128,6 +133,8 @@ Exemplo: se a instância `creative` usa UDP 19134, o jogador entra pelo hostname
 | --- | --- |
 | `rcon_token` | Segredo Bearer compartilhado pelas APIs. Mínimo 32 caracteres. |
 | `rcon_allowed_ips` | IPs/CIDRs permitidos para as APIs, separados por vírgula. Vazio permite qualquer origem que consiga alcançar as portas. |
+| `allow_list` | Exige jogadores cadastrados na allowlist de cada mundo. Desligado por padrão. |
+| `emit_server_telemetry` | Habilita o envio da telemetria oficial do Bedrock à Mojang/Microsoft. Ligado por padrão. |
 | `instances` | Lista de 1 a 5 instâncias editada diretamente no formulário do Home Assistant. |
 | `backup_interval_hours` | Frequência de backup por instância, em horas. |
 | `backup_keep_count` | Quantidade de backups retidos por instância. |

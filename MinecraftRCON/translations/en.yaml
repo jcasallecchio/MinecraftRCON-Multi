@@ -5,6 +5,12 @@ configuration:
   rcon_allowed_ips:
     name: API allowed IPs
     description: Optional comma-separated IP or CIDR list. Empty allows any IP that can reach the API.
+  allow_list:
+    name: Require player allowlist
+    description: Disabled allows any player to join. Enable it to require names added to each world.
+  emit_server_telemetry:
+    name: Send Bedrock server telemetry
+    description: Sends optional server telemetry to Mojang/Microsoft. MineDev continues using its local telemetry when this is off.
   backup_interval_hours:
     name: Backup interval (hours)
   backup_keep_count:
