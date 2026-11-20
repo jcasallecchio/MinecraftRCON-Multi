@@ -20,7 +20,7 @@ from backup_manager import BackupError, create_scheduled_backup, list_scheduled_
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024
 
-SERVER_DIR = Path(os.environ.get("MINECRAFT_SERVER_DIR", "/share/minecraftRCON"))
+SERVER_DIR = Path(os.environ.get("MINECRAFT_SERVER_DIR", "/share/minecraftRCON-Multi/instances/main"))
 LOG_FILE = os.environ.get("RCON_LOG_FILE", str(SERVER_DIR / "rcon_commands.log"))
 SERVER_LOG_FILE = SERVER_DIR / "server.log"
 PLAYER_EVENTS_FILE = SERVER_DIR / "player_events.jsonl"
@@ -28,7 +28,9 @@ PLAYER_STATS_FILE = SERVER_DIR / "player_stats.json"
 BACKUP_DIR = SERVER_DIR / "backups" / "scheduled"
 MAINTENANCE_FILE = SERVER_DIR / ".maintenance"
 OPTIONS_FILE = os.environ.get("RCON_OPTIONS_FILE", "/data/options.json")
-RCON_PORT = 19133
+RCON_PORT = int(os.environ.get("RCON_PORT", "19133"))
+SCREEN_SESSION = os.environ.get("SCREEN_SESSION", "mc")
+INSTANCE_ID = os.environ.get("MINECRAFT_INSTANCE_ID", "main")
 MAX_COMMAND_LENGTH = 1024
 LOG_MAX_BYTES = 2 * 1024 * 1024
 LOG_BACKUP_COUNT = 5
@@ -169,8 +171,9 @@ def request_rate_allowed(ip, command_request=False, backup_request=False):
         return True
 
 
-def find_screen_session(session_name="mc"):
+def find_screen_session(session_name=None):
     """Return the exact screen session ID, if it exists."""
+    session_name = session_name or SCREEN_SESSION
     try:
         result = subprocess.run(
             ["screen", "-ls"],
@@ -199,7 +202,7 @@ def authorized():
 
 
 def send_console_command(command):
-    session_id = find_screen_session("mc")
+    session_id = find_screen_session()
     if not session_id:
         return False
     try:
@@ -269,7 +272,7 @@ def sample_player_telemetry():
 
 def telemetry_scheduler():
     while not SCHEDULER_STOP.is_set():
-        if find_screen_session("mc") is not None:
+        if find_screen_session() is not None:
             try:
                 if not sample_player_telemetry():
                     app.logger.debug("Bedrock player telemetry was not available in the console output")
@@ -453,7 +456,7 @@ def _server_started_epoch():
 
 
 def get_player_stats():
-    running = find_screen_session("mc") is not None
+    running = find_screen_session() is not None
     with TELEMETRY_LOCK:
         online_player_names = [str(name) for name in PLAYER_TELEMETRY.get("names", [])]
         online_names = {name.casefold() for name in online_player_names}
@@ -589,7 +592,7 @@ def _bedrock_memory_bytes():
 def get_telemetry():
     properties = _read_server_properties()
     maintenance = MAINTENANCE_FILE.exists()
-    running = find_screen_session("mc") is not None
+    running = find_screen_session() is not None
     status = "maintenance" if maintenance else "running" if running else "offline"
     now = datetime.now(timezone.utc)
     started_at = None
@@ -615,12 +618,15 @@ def get_telemetry():
         "collected_at": now.isoformat(),
         "server": {
             "status": status,
+            "instance_id": INSTANCE_ID,
             "edition": "bedrock",
             "command_dialect": "minecraft-bedrock",
             "version": _server_version(),
             "uptime_seconds": uptime_seconds,
             "started_at": datetime.fromtimestamp(started_at, timezone.utc).isoformat() if started_at else None,
             "world_name": properties.get("level-name"),
+            "game_port": _int_or_none(properties.get("server-port")),
+            "game_portv6": _int_or_none(properties.get("server-portv6")),
             "game_mode": properties.get("gamemode"),
             "difficulty": properties.get("difficulty"),
             "max_players": _int_or_none(properties.get("max-players")),
@@ -640,10 +646,12 @@ def _int_or_none(value):
 def api_info():
     return {
         "api_version": API_VERSION,
-        "addon": "bedrock_server_rcon",
+        "addon": "minecraft_rcon_multi",
+        "instance_id": INSTANCE_ID,
         "server": {"edition": "bedrock", "command_dialect": "minecraft-bedrock", "version": _server_version()},
         "capabilities": {
             "command_execution": {"method": "POST", "path": "/api/v1/commands", "body": {"command": "string"}},
+            "instance_control": {"method": "POST", "path": "/api/v1/control", "actions": ["start", "stop", "restart"]},
             "telemetry": {"method": "GET", "path": "/api/v1/telemetry", "refresh_seconds": TELEMETRY_INTERVAL_SECONDS},
             "player_events": {"method": "GET", "path": "/api/v1/events", "retention_days": 7},
             "player_statistics": {"method": "GET", "path": "/api/v1/player-stats", "metrics": ["playtime", "sessions", "deaths", "last_seen"]},
@@ -695,7 +703,7 @@ def backup_scheduler():
         return
     interval_seconds = max(3600, min(interval_hours, 720) * 3600)
     while not SCHEDULER_STOP.wait(interval_seconds):
-        if find_screen_session("mc") is None:
+        if find_screen_session() is None:
             app.logger.warning("Skipping scheduled backup because Bedrock is not running")
             continue
         try:
@@ -711,13 +719,13 @@ def restore_scheduled_backup(backup_id):
     if not (BACKUP_DIR / backup_id).is_file():
         raise BackupError("Scheduled backup was not found")
     with SERVER_OPERATION_LOCK:
-        if find_screen_session("mc") is not None:
+        if find_screen_session() is not None:
             if not send_console_command("stop"):
                 raise BackupError("Could not send stop to the running Bedrock server")
             deadline = time.monotonic() + 60
-            while find_screen_session("mc") is not None and time.monotonic() < deadline:
+            while find_screen_session() is not None and time.monotonic() < deadline:
                 time.sleep(0.25)
-            if find_screen_session("mc") is not None:
+            if find_screen_session() is not None:
                 raise BackupError("Bedrock did not stop within 60 seconds; restore was cancelled")
 
         try:
@@ -734,7 +742,7 @@ def restore_scheduled_backup(backup_id):
 def health():
     if MAINTENANCE_FILE.exists():
         return jsonify({"status": "maintenance"}), 503
-    if find_screen_session("mc") is None:
+    if find_screen_session() is None:
         return jsonify({"status": "unavailable", "message": "Bedrock server is not running"}), 503
     return jsonify({"status": "ready"})
 
@@ -834,6 +842,44 @@ def versioned_player_stats():
     if not authorized():
         return jsonify({"status": "error", "message": "Unauthorized"}), 401
     return jsonify(get_player_stats())
+
+
+@app.post("/api/v1/control")
+def control_instance():
+    if not authorized():
+        return jsonify({"status": "error", "message": "Unauthorized"}), 401
+    data = request.get_json(silent=True)
+    action = data.get("action") if isinstance(data, dict) else None
+    if action not in {"start", "stop", "restart"}:
+        return jsonify({"status": "error", "message": "action must be start, stop, or restart"}), 400
+
+    with SERVER_OPERATION_LOCK:
+        running = find_screen_session() is not None
+        try:
+            if action == "start":
+                MAINTENANCE_FILE.unlink(missing_ok=True)
+                return jsonify({"status": "starting", "message": "A instância será iniciada pelo supervisor local."}), 202
+
+            MAINTENANCE_FILE.write_text(f"{action} requested\n", encoding="utf-8")
+            if running and not send_console_command("stop"):
+                MAINTENANCE_FILE.unlink(missing_ok=True)
+                return jsonify({"status": "error", "message": "Não foi possível enviar stop ao servidor."}), 503
+            if action == "restart":
+                threading.Thread(target=_restart_after_graceful_stop, name=f"restart-{SCREEN_SESSION}", daemon=True).start()
+                return jsonify({"status": "restarting", "message": "A instância está encerrando para reiniciar."}), 202
+            return jsonify({"status": "stopping" if running else "stopped", "message": "A instância está encerrando com segurança." if running else "A instância foi parada."}), 202
+        except OSError as error:
+            return jsonify({"status": "error", "message": f"Não foi possível alterar o estado: {error}"}), 503
+
+
+def _restart_after_graceful_stop():
+    deadline = time.monotonic() + 60
+    while find_screen_session() is not None and time.monotonic() < deadline:
+        time.sleep(0.25)
+    if find_screen_session() is not None:
+        app.logger.error("Instance %s did not stop in time; keeping maintenance marker", SCREEN_SESSION)
+        return
+    MAINTENANCE_FILE.unlink(missing_ok=True)
 
 
 @app.get("/backups")

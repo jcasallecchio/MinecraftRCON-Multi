@@ -1,91 +1,132 @@
-# Instalação e configuração
+# MinecraftRCON Multi: instalação e configuração
 
-## Pré-requisitos
+Este add-on gerencia de uma a cinco instâncias Bedrock simultâneas. Cada mundo roda em um processo Bedrock separado, com sua própria pasta e sua própria API. O nome do projeto, o slug e o caminho de dados são diferentes do MinecraftRCON original.
 
-- Home Assistant OS com Supervisor e loja de aplicativos, também chamada de loja de add-ons.
-- Host **x86-64 (amd64)**, espaço livre para o mundo, o download e os backups, e acesso à internet para baixar o servidor dedicado. O add-on executa diretamente o binário Linux oficial do [Bedrock Dedicated Server](https://www.minecraft.net/en-us/download/server/bedrock).
-- Minecraft **Bedrock Edition** em versão compatível com a do servidor. Para jogar pela internet, use uma conta Microsoft com permissão de multijogador.
+## Requisitos
 
-## Instalar e iniciar
+- Home Assistant OS com Supervisor e loja de aplicativos.
+- Host x86-64 (amd64) compatível com o servidor dedicado oficial Bedrock para Linux.
+- Memória, CPU e espaço em disco para os mundos e respectivos backups. Cada servidor consome recursos mesmo sem jogadores conectados.
+- Minecraft Bedrock em versão compatível com a versão mais recente do servidor.
 
-1. Abra **Configurações → Aplicativos (ou Add-ons) → Instalar aplicativo**. Abra o menu **⋮ → Repositórios** e adicione `https://github.com/jcasallecchio/MinecraftRCON`. Você também pode usar o [botão My Home Assistant](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fjcasallecchio%2FMinecraftRCON).
-2. Na loja, selecione **Bedrock Server with RCON** e clique em **Instalar**.
-3. Na aba **Configuração**, defina um `rcon_token` aleatório de pelo menos **32 caracteres**. Gere-o com um gerenciador de senhas e guarde-o nele. A tabela abaixo descreve as opções adicionais.
-4. Salve, clique em **Iniciar** e acompanhe a aba **Logs**. Na primeira execução, o add-on baixa o Bedrock e prepara os arquivos de configuração. Aguarde a mensagem de que o servidor iniciou.
-5. No jogo, entre em **Jogar → Servidores → Adicionar servidor**, informe o **IP local do Home Assistant** no campo Endereço e **19132** no campo Porta. Use um nome de sua escolha no campo Nome do servidor.
+## Instalar
 
-Se pretende jogar pela internet, confirme primeiro que consegue entrar no mundo pela rede local. Depois, siga o [guia de portas, DuckDNS e Cloudflare](https://github.com/jcasallecchio/MinecraftRCON/blob/main/docs/acesso-remoto.md).
+1. Adicione `https://github.com/jcasallecchio/MinecraftRCON-Multi` em **Configurações → Aplicativos → ⋮ → Repositórios**.
+2. Instale **MinecraftRCON Multi**.
+3. Na configuração do add-on, defina `rcon_token` com um segredo aleatório de pelo menos 32 caracteres. Guarde-o em um gerenciador de senhas.
+4. Configure `instances_json`, salve e inicie o add-on.
+5. Confira os logs. Na primeira inicialização, cada mundo baixa sua cópia do servidor Bedrock. Aguarde a mensagem de servidor pronto para cada instância.
+6. Adicione manualmente no Minecraft o IP local do Home Assistant e a porta UDP de jogo da instância.
 
-Se você instalou pelo endereço antigo (`https://github.com/jcasallecchio/homeassistant-addons`), continue usando o add-on já instalado. O Home Assistant gera o identificador a partir da URL cadastrada. Adicionar o endereço novo pode exibir uma segunda entrada para o mesmo add-on. [Como o Home Assistant identifica repositórios](https://contributors.home-assistant.io/apps/guides/repository/#the-repository-id)
+## Configurar instâncias
 
-## Opções do add-on
+`instances_json` é uma lista JSON inserida como texto nas opções do add-on. Cada objeto aceita:
 
-| Opção | Padrão | Como usar |
+| Campo | Obrigatório | Descrição |
 | --- | --- | --- |
-| `rcon_token` | Vazio | O add-on exige um token de pelo menos 32 caracteres para iniciar, mesmo se você só for jogar. Use o valor no cabeçalho `Authorization: Bearer` das requisições autenticadas. |
-| `rcon_allowed_ips` | Vazio | Lista separada por vírgulas de IPs ou redes que podem acessar a API, por exemplo `192.168.1.20,192.168.1.32/28`. Vazio permite qualquer origem com acesso à porta. O endpoint `/health` é acessível sem token e sem esse filtro. |
-| `backup_interval_hours` | `24` | Intervalo em horas para criar backups programados. Aceita de 1 a 720 horas. Use `0` para desativar o agendamento. |
-| `backup_keep_count` | `7` | Número de backups mantidos, de 1 a 90. A retenção se aplica aos arquivos gerados tanto pelo agendamento quanto pela API. |
+| `id` | Sim | Identificador exclusivo: letras minúsculas, números, `_` ou `-`, até 32 caracteres. Também define a pasta da instância. |
+| `name` | Sim | Nome amigável mostrado nos logs e no MineDev. |
+| `world_name` | Sim | Valor `level-name` do mundo Bedrock. Para usar um mundo já copiado, deve corresponder ao nome da pasta em `worlds/`. |
+| `udp_port` | Sim | Porta UDP IPv4 do servidor, entre 1024 e 65533. A próxima porta é reservada para `server-portv6`. |
 
-Salve e reinicie o add-on depois de alterar as opções. Guarde o token em um local privado e entregue-o apenas ao serviço que chama a API.
+Uma instância:
 
-## Configurar o mundo e os jogadores
-
-Os arquivos ficam em `/share/minecraftRCON/`. Use um editor com acesso ao compartilhamento `share`, como o add-on Samba, ou um terminal configurado para acessar esse diretório. Pare o add-on antes de editar os arquivos e inicie-o depois de salvar.
-
-No arquivo `/share/minecraftRCON/server.properties`, altere os valores das propriedades existentes. O exemplo usa o mundo `Meu Mundo` e restringe o acesso à lista de jogadores.
-
-~~~properties
-server-name=Meu servidor Bedrock
-level-name=Meu Mundo
-gamemode=survival
-difficulty=normal
-online-mode=true
-allow-list=true
+~~~json
+[{"id":"main","name":"Abydos","world_name":"Abydos","udp_port":19132}]
 ~~~
 
-Antes de entrar com a lista ativa, adicione o Gamertag de cada jogador. Você pode enviar `allowlist add "Gamertag"` pelo console do Bedrock, inclusive pela [API RCON](#api-rcon), enquanto o servidor estiver rodando. Mantenha `online-mode=true` para autenticar os jogadores pela conta Microsoft.
+Duas instâncias simultâneas:
 
-Para usar um mundo Bedrock existente, faça uma cópia de segurança e, com o add-on parado, copie a pasta do mundo para `/share/minecraftRCON/worlds/`. Em `level-name`, coloque exatamente o nome dessa pasta. O servidor usa `transport=nethernet`, que o add-on garante na inicialização. Consulte as demais propriedades no [guia oficial do Bedrock Dedicated Server](https://help.minecraft.net/hc/en-us/articles/49914677714957).
+~~~json
+[
+  {"id":"abydos","name":"Abydos","world_name":"Abydos","udp_port":19132},
+  {"id":"creative","name":"Criativo","world_name":"Criativo","udp_port":19134}
+]
+~~~
 
-## API RCON
+Use portas UDP distintas sem sobreposição: cada instância usa `udp_port` para IPv4 e `udp_port + 1` para IPv6. Os exemplos reservam os pares `19132–19133`, `19134–19135`, `19136–19137`, `19138–19139` e `19140–19141`. A API RCON usa TCP `19233` para o primeiro item da lista, `19234` para o segundo e assim por diante, até `19237`.
 
-A API aceita comandos nativos do Bedrock por HTTP e tem como base `http://IP_LOCAL_DO_HOME_ASSISTANT:19133`. Use uma rede de confiança ou VPN. Mantenha essa porta fora do encaminhamento de portas da internet. Configure `rcon_allowed_ips` para limitar as origens que podem usar a API.
+Não configure pares UDP que se sobreponham. O add-on valida IDs, nomes, quantidade e colisões de portas antes de iniciar. A ordem da lista define a porta TCP RCON; mantenha a ordem sincronizada com o `.env` do MineDev. Depois de alterar a lista, reinicie o add-on.
 
-| Método e caminho | Função |
+## Arquivos de cada mundo
+
+Os dados ficam isolados em:
+
+~~~text
+/share/minecraftRCON-Multi/instances/<id>/
+├── worlds/
+├── server.properties
+├── server.log
+├── player_events.jsonl
+├── player_stats.json
+├── rcon_commands.log
+└── backups/
+~~~
+
+As APIs, backups, logs, estatísticas e eventos de um ID não se misturam aos de outro. O add-on define as portas e o `level-name` de cada instância na inicialização. Ele usa `transport=nethernet` e desativa `enable-lan-visibility`, para evitar conflito entre anúncios LAN; conecte pelo IP e porta manualmente.
+
+## Migrar um mundo do MinecraftRCON original
+
+O novo repositório usa outro slug e outra pasta. Instalar este add-on não atualiza o add-on antigo nem move os dados automaticamente.
+
+1. Faça backup do mundo e desligue o add-on antigo. Não copie arquivos de um mundo enquanto ele estiver sendo gravado.
+2. Inicie MinecraftRCON Multi uma vez para ele criar `/share/minecraftRCON-Multi/instances/<id>/` e depois pare o novo add-on.
+3. Copie a pasta do mundo antigo de `/share/minecraftRCON/worlds/<mundo>` para `/share/minecraftRCON-Multi/instances/<id>/worlds/<mundo>`.
+4. Defina `world_name` para o nome exato dessa pasta e configure `server.properties` conforme necessário. Não copie binários do Bedrock, arquivos de atualização ou arquivos de transação do add-on antigo.
+5. Inicie o novo add-on e verifique os logs e o acesso local. Preserve o backup original até confirmar o mundo migrado.
+
+Você pode copiar também `permissions.json`, `allowlist.json`, `structures/`, `behavior_packs/` e `resource_packs/` somente se esses dados forem necessários ao mundo. Revise os caminhos de pacotes e faça uma cópia de segurança antes. Os backups do add-on antigo não são automaticamente listados pelos novos endpoints.
+
+## Portas e API RCON
+
+| Instância na lista | Jogo IPv4 | Reserva IPv6 | API HTTP RCON |
+| ---: | ---: | ---: | ---: |
+| 1 | UDP `udp_port` (padrão 19132) | UDP `udp_port + 1` (19133) | TCP `19233` |
+| 2 | UDP `udp_port` (exemplo 19134) | UDP `udp_port + 1` (19135) | TCP `19234` |
+| 3 | UDP `udp_port` (exemplo 19136) | UDP `udp_port + 1` (19137) | TCP `19235` |
+| 4 | UDP `udp_port` (exemplo 19138) | UDP `udp_port + 1` (19139) | TCP `19236` |
+| 5 | UDP `udp_port` (exemplo 19140) | UDP `udp_port + 1` (19141) | TCP `19237` |
+
+As APIs usam `19233–19237/TCP` para não disputar portas de jogo. **Não encaminhe nenhuma porta TCP da API RCON para a internet.** Restrinja o acesso à rede de confiança ou a uma VPN e, se necessário, informe os IPs em `rcon_allowed_ips` separados por vírgulas.
+
+Cada porta TCP RCON serve apenas a instância na mesma posição da lista. A API mantém o contrato v1 existente: `/health`, `/api/v1/info`, `/api/v1/telemetry`, `/api/v1/events`, `/api/v1/player-stats`, `/api/v1/commands`, `/api/v1/control` e endpoints de backups. A telemetria também informa `instance_id`, `game_port` e `game_portv6`. Use o `rcon_token` como Bearer token. `/api/v1/control` aceita `start`, `stop` e `restart` e desconecta jogadores quando para/reinicia um mundo.
+
+Para iniciar, parar ou reiniciar um mundo individual pelo MineDev, use o seletor da instância e os botões no cabeçalho do terminal. A ação é autenticada e exige confirmação no navegador. Reiniciar o add-on também reinicia todas as instâncias configuradas.
+
+## Configurar o MineDev
+
+No arquivo `.env` privado da instalação do console, associe cada ID a URL e token da API de sua posição na lista:
+
+~~~dotenv
+BEDROCK_INSTANCES='[{"id":"abydos","name":"Abydos","url":"http://192.168.1.50:19233","token":"TOKEN_LONGO_DA_API"},{"id":"creative","name":"Criativo","url":"http://192.168.1.50:19234","token":"TOKEN_LONGO_DA_API"}]'
+~~~
+
+O mesmo `rcon_token` pode ser usado em todas as APIs deste add-on. O MineDev valida a instância no servidor PHP e não envia tokens ao navegador. Se o console estiver no mesmo host, troque `192.168.1.50` pelo IP ou nome alcançável a partir do processo PHP.
+
+As variáveis antigas `BEDROCK_API_URL` e `BEDROCK_API_TOKEN` continuam aceitas para uma instalação de instância única, identificada como `main`. Com `BEDROCK_INSTANCES`, a página mostra o seletor e disponibiliza telemetria, feed, estatísticas e comandos para a instância escolhida.
+
+Veja [console/README.md](../console/README.md) para instalar o painel e configurar Apache, login, permissões e `.env`.
+
+## Acesso pela internet
+
+Primeiro conecte todos os mundos pela rede local. Para permitir acesso externo, encaminhe somente as portas UDP de jogo desejadas no roteador e a porta para o IP local reservado do Home Assistant. Configure DDNS em DuckDNS ou DNS convencional. A Cloudflare Proxy HTTP não transporta o tráfego do jogo Bedrock; deixe o registro DNS como **DNS only** ou use uma solução específica de proxy UDP.
+
+Exemplo: se a instância `creative` usa UDP 19134, o jogador entra pelo hostname `meu-servidor.example` e porta 19134. Consulte o [guia externo](../docs/acesso-remoto.md) antes de alterar o roteador.
+
+## Retenção, backups e erros
+
+- Configure `backup_interval_hours` em horas (0 desativa o agendamento) e `backup_keep_count` de 1 a 90.
+- Para backup de mundo em execução, a cópia usa `save hold`/`save resume`, que requer `allow-cheats=true`; avalie impacto em conquistas.
+- Os IDs têm dados persistidos sem expiração para estatísticas, até sete dias/5.000 eventos para o feed e rotação de logs.
+- Se uma instância não iniciar, consulte o log do add-on e a pasta correspondente. Erros de JSON, IDs duplicados e portas sobrepostas encerram a validação antes de abrir processos Bedrock.
+- Se uma instância falhar, o add-on é encerrado para que o Supervisor recupere o conjunto em estado consistente.
+
+## Opções
+
+| Opção | Uso |
 | --- | --- |
-| `GET /health` | Verifica se a sessão do Bedrock está ativa. Responde `ready` quando disponível e HTTP 503 quando indisponível ou em manutenção. Dispensa token. |
-| `GET /api/v1/info` | Mostra a versão da API, o dialeto de comandos e as operações disponíveis. |
-| `GET /api/v1/telemetry` | Retorna o estado e a versão do servidor, dados do mundo, jogadores, memória do processo e tempo de atividade. A amostra de jogadores é atualizada em segundo plano a cada 15 segundos e indica sua idade e se está desatualizada. |
-| `GET /api/v1/events?after=<id>&limit=<n>` | Retorna eventos de entrada, saída e morte dos jogadores. A API mantém até sete dias e 5.000 eventos. `after` busca eventos posteriores ao cursor e `limit` aceita de 1 a 200. |
-| `GET /api/v1/player-stats` | Retorna estatísticas acumuladas por jogador: tempo jogado, sessões, saídas, mortes, primeira atividade e última atividade. Os totais ficam em `/share/minecraftRCON/player_stats.json` sem expiração. |
-| `POST /api/v1/commands` | Envia um comando ao console. `POST /rcon` continua disponível para integrações existentes. |
-| `GET /backups` | Lista os backups disponíveis para restauração. |
-| `POST /backups` | Cria um backup do mundo sob demanda. |
-| `POST /backups/<id>/restore` | Restaura o backup indicado. Envie o JSON `{"confirm":"restore <id>"}`, substituindo `<id>` pelo ID exato na URL e no corpo. |
-
-O exemplo abaixo usa a variável de ambiente `RCON_TOKEN` e `192.168.1.50` como IP local de exemplo.
-
-~~~sh
-curl --fail-with-body http://192.168.1.50:19133/api/v1/commands \
-  -H "Authorization: Bearer ${RCON_TOKEN}" \
-  -H 'Content-Type: application/json' \
-  --data '{"command":"list"}'
-~~~
-
-Envie um comando por requisição, com até 1024 caracteres. A resposta inclui `request_id`, `sent` e, quando disponíveis, linhas recentes do console. A entrega ao console pode ser confirmada pela API. A execução pelo jogo deve ser verificada no mundo ou nos logs. A API limita cada IP a 60 requisições por minuto e 30 comandos por minuto.
-
-Integrações podem usar `edition: "bedrock"` e `command_dialect: "minecraft-bedrock"` para identificar os comandos aceitos. A telemetria inclui `schema_version`, `collected_at`, `server`, `players` e `performance`. O log da API fica em `/share/minecraftRCON/rcon_commands.log` e é rotacionado a cada 2 MiB, com até cinco arquivos anteriores.
-
-O feed de jogadores é lido do log nativo do servidor. Ele armazena apenas entradas, saídas e mensagens de morte, sem registrar mensagens de chat. Os eventos são gravados em `/share/minecraftRCON/player_events.jsonl` e ficam disponíveis no MineDev Console por até sete dias, limitados aos 5.000 eventos mais recentes.
-
-As estatísticas são acumuladas a partir desses eventos e gravadas separadamente em `player_stats.json`, sem a retenção de sete dias do feed. Na primeira inicialização, o add-on aproveita eventos ainda presentes no feed para montar os totais iniciais. O tempo jogado é calculado entre os registros de entrada e saída, e a sessão atual aparece quando há uma amostra recente de jogadores online. Eventos mais antigos que a retenção do feed não podem ser recuperados para compor o histórico inicial.
-
-Use o [MineDev Console](https://github.com/jcasallecchio/MinecraftRCON/tree/main/console) se preferir administrar o servidor por um painel web. O guia do painel explica como configurar o mesmo token da API e usar os comandos, a telemetria e o histórico.
-
-## Backups, restauração e atualizações
-
-- Os backups programados e sob demanda ficam em `/share/minecraftRCON/backups/scheduled/`. Para copiar um mundo em execução, o add-on usa `save hold` e volta a permitir gravações após copiar os dados. Isso requer `allow-cheats=true`. Avalie o impacto nas conquistas antes de ativar cheats em um mundo existente. Consulte a [documentação do comando save](https://learn.microsoft.com/en-us/minecraft/creator/commands/commands/save?view=minecraft-bedrock-stable).
-- Antes de restaurar, avise os jogadores e confirme o ID do backup. A restauração encerra o servidor, cria uma cópia para reversão e aplica o backup escolhido. Aguarde a reinicialização e confirme que consegue entrar no mundo.
-- A cada inicialização, o add-on consulta a versão oficial do Bedrock. Quando há uma versão diferente, valida o pacote antes de instalar e mantém os mundos e a configuração. Se a consulta ou o download falhar e já houver uma instalação utilizável, o add-on tenta iniciar a versão instalada. A próxima inicialização repete a consulta.
-- Mantenha uma cópia do mundo e dos arquivos de configuração em outro dispositivo. O diretório de backups do add-on fica no mesmo armazenamento do servidor.
+| `rcon_token` | Segredo Bearer compartilhado pelas APIs. Mínimo 32 caracteres. |
+| `rcon_allowed_ips` | IPs/CIDRs permitidos para as APIs, separados por vírgula. Vazio permite qualquer origem que consiga alcançar as portas. |
+| `instances_json` | Lista de 1 a 5 instâncias no formato documentado acima. |
+| `backup_interval_hours` | Frequência de backup por instância, em horas. |
+| `backup_keep_count` | Quantidade de backups retidos por instância. |

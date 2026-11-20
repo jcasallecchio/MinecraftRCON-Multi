@@ -1,12 +1,12 @@
 # MineDev Console
 
-Painel web do MinecraftRCON para administrar um servidor **Minecraft Bedrock Edition**. Mostra jogadores, mundo, versão, memória do processo e tempo de atividade. Permite acompanhar entradas, saídas e mortes no feed ao vivo, consultar estatísticas acumuladas por jogador, enviar comandos com sugestões, consultar o catálogo e exportar o histórico de auditoria. O painel funciona no computador e no celular.
+Painel web do MinecraftRCON Multi para administrar servidores **Minecraft Bedrock Edition**. Mostra jogadores, mundo, versão, memória do processo e tempo de atividade. Permite selecionar instâncias, acompanhar entradas, saídas e mortes, consultar estatísticas por mundo, enviar comandos, e iniciar, parar ou reiniciar o servidor selecionado. O painel funciona no computador e no celular.
 
-O navegador acessa o painel pelo Apache. O PHP chama a API do add-on na rede de confiança, na porta `19133/TCP`, com o token configurado no servidor web.
+O navegador acessa o painel pelo Apache. O PHP chama as APIs RCON na rede de confiança, em `19233–19237/TCP`, usando os tokens privados configurados no `.env`. Nunca encaminhe essas portas pela internet.
 
 ## Requisitos
 
-- [Bedrock Server with RCON](../MinecraftRCON/DOCS.md) versão **1.7.0 ou posterior**, com a API v1 acessível a partir do servidor web.
+- [MinecraftRCON Multi](../MinecraftRCON/DOCS.md), com as APIs v1 acessíveis a partir do servidor web.
 - Apache 2.4 com PHP, `mod_rewrite` e suporte a `.htaccess` para a pasta do console. [Configuração de .htaccess no Apache](https://httpd.apache.org/docs/2.4/howto/htaccess.html)
 - PHP 8.2 ou mais recente, em uma versão que ainda receba correções de segurança. Habilite `curl` no PHP usado pelo Apache e tenha o PHP de linha de comando disponível para a configuração inicial. [Versões mantidas do PHP](https://www.php.net/supported-versions.php) · [Extensão cURL](https://www.php.net/manual/en/book.curl.php)
 
@@ -48,14 +48,13 @@ php tools/initialize.php
 
 O instalador cria o `.env` local e mostra o usuário inicial `admin` e uma senha aleatória. Guarde essa senha no seu gerenciador de senhas. O arquivo guarda somente o hash da senha e o instalador preserva um `.env` existente. No Windows, se `php` não estiver no PATH, use o caminho do executável, por exemplo `C:\xampp\php\php.exe`.
 
-Abra o `.env` em um editor e preencha as duas opções abaixo. Troque o IP de exemplo pelo endereço local do Home Assistant. Em `BEDROCK_API_TOKEN`, copie o mesmo valor de `rcon_token` da aba **Configuração** do add-on.
+Abra o `.env` em um editor. Para uma instalação Multi, associe cada ID da opção `instances_json` à sua API. Use a mesma ordem que a lista no add-on; a primeira API começa em `19233`, a segunda `19234` e assim por diante. Troque o endereço de exemplo pelo IP local do Home Assistant e copie o `rcon_token` da configuração do add-on.
 
 ~~~dotenv
-BEDROCK_API_URL=http://192.168.1.50:19133
-BEDROCK_API_TOKEN=SEU_TOKEN_DO_ADDON
+BEDROCK_INSTANCES='[{"id":"abydos","name":"Abydos","url":"http://192.168.1.50:19233","token":"SEU_TOKEN_DO_ADDON"},{"id":"creative","name":"Criativo","url":"http://192.168.1.50:19234","token":"SEU_TOKEN_DO_ADDON"}]'
 ~~~
 
-Use a URL base da API de administração. A porta `19132` é a do jogo. Se o add-on usar `rcon_allowed_ips`, inclua o **IP de origem do servidor PHP** que faz a chamada, inclusive se ele estiver em um contêiner.
+Mantenha os tokens somente em `.env`, fora da raiz pública sempre que possível. Se o add-on usar `rcon_allowed_ips`, inclua o **IP de origem do servidor PHP** que faz as chamadas, inclusive se ele estiver em um contêiner. Para manter um único servidor legado, `BEDROCK_API_URL` e `BEDROCK_API_TOKEN` continuam aceitos.
 
 O processo PHP precisa conseguir ler `.env` e escrever em `storage/`. Em Linux com Apache/PHP usando `www-data`, use os comandos abaixo na pasta do console.
 
@@ -83,11 +82,11 @@ A API confirma o envio ao console do Bedrock e pode retornar linhas recentes. Co
 
 ## Acesso e solução de problemas
 
-Acesse o painel por HTTPS e restrinja a hospedagem à rede local ou à VPN. Mantenha `19133/TCP` fora do encaminhamento de portas da internet. Para uso com proxy HTTPS, configure o servidor PHP para reconhecer a conexão como HTTPS e emitir o cookie de sessão com `Secure`.
+Acesse o painel por HTTPS e restrinja a hospedagem à rede local ou à VPN. Mantenha todas as portas RCON (`19233–19237/TCP`) fora do encaminhamento de portas da internet. Para uso com proxy HTTPS, configure o servidor PHP para reconhecer a conexão como HTTPS e emitir o cookie de sessão com `Secure`.
 
 | Sintoma | O que conferir |
 | --- | --- |
 | Página retorna HTTP 500 | Veja o log do Apache/PHP. Confirme que o `.env` foi criado, é legível pelo PHP e preserva `APP_SECRET` e o hash da senha. Verifique as permissões de `storage/` e se o Apache aceita as diretivas do `.htaccess`. |
 | A tela mostra **Token pendente** | Preencha `BEDROCK_API_TOKEN` com o token do add-on. |
 | O add-on retorna HTTP 401 ou 403 | Confira se os tokens são iguais e se `rcon_allowed_ips` permite o IP de origem do PHP. |
-| O painel mostra **Sem conexão** | A partir do host do PHP, substitua o endereço de exemplo e consulte `curl http://192.168.1.50:19133/health`. O retorno `{"status":"ready"}` indica que a API está respondendo e a sessão do Bedrock está ativa. Em caso de timeout, verifique endereço, rota e firewall. |
+| O painel mostra **Sem conexão** | A partir do host do PHP, consulte `curl http://192.168.1.50:19233/health` (troque para a porta da instância). O retorno `{"status":"ready"}` indica que a API responde e a sessão Bedrock correspondente está ativa. |

@@ -1,96 +1,72 @@
-# Acesso pela internet com NetherNet
+# Acesso externo aos mundos Bedrock
 
-Este guia parte de um servidor que já funciona na rede local. Se ainda estiver instalando o add-on, comece pelo [guia de instalação e configuração](../MinecraftRCON/DOCS.md).
+Este guia trata somente das portas de jogo. Primeiro confirme que cada instância funciona dentro da rede local. Veja a [configuração do add-on](../MinecraftRCON/DOCS.md) e anote o `udp_port` de cada mundo.
 
-## 1. Prepare a rede
+## Antes de configurar o roteador
 
-1. Reserve no roteador o IP local do Home Assistant via DHCP. Neste guia, `192.168.1.50` representa esse IP.
-2. Compare o IPv4 WAN mostrado pelo roteador com o IPv4 público da sua conexão. Se o WAN for privado, estiver entre `100.64.0.0` e `100.127.255.255` ou for diferente do IP público, verifique se existe outro roteador à frente ou CGNAT. Com dois roteadores, o encaminhamento precisa funcionar nos dois, a menos que um esteja em modo bridge. Para CGNAT, confirme com o provedor a disponibilidade de um IPv4 público.
-3. No arquivo `/share/minecraftRCON/server.properties`, confira `transport=nethernet` e `server-port=19132`. Deixe `server-ip` vazio se o servidor puder escutar em todas as interfaces. Se for editar, pare o add-on, salve o arquivo e inicie novamente.
+1. Reserve por DHCP um IP local fixo para o Home Assistant.
+2. Compare o IPv4 WAN do roteador com o IPv4 público mostrado por um serviço como `https://api.ipify.org`. Se forem diferentes, procure outro roteador em cascata ou CGNAT. Em CGNAT, peça ao provedor um IPv4 público ou escolha uma solução de túnel/proxy UDP compatível.
+3. Confirme que o firewall e as políticas do provedor permitem as portas necessárias.
 
-Use `online-mode=true` e `allow-list=true` para restringir o acesso aos jogadores cadastrados. Mantenha a API RCON (`19133/TCP`) na rede local ou em uma VPN. As regras deste guia são para o jogo. [Guia oficial do Bedrock Dedicated Server](https://help.minecraft.net/hc/en-us/articles/49914677714957)
+## Portas por instância
 
-## 2. Encaminhe as portas no roteador
+Para cada item configurado, o `udp_port` identifica a porta de entrada do jogo. A porta seguinte (`udp_port + 1`) é reservada pelo add-on para o servidor IPv6. O cliente Bedrock também inicia a sinalização no `server-port` TCP e negocia o tráfego do jogo em UDP.
 
-Abra **Encaminhamento de portas**, geralmente no menu **NAT**, e direcione **TCP 19132 externo → TCP 19132 no IP local do Home Assistant**. Permita a entrada nessa porta no firewall do host, se houver. O jogo usa essa porta TCP para a sinalização inicial. O tráfego da partida usa UDP. Em redes que permitem UDP de saída e o tráfego de retorno, o NetherNet pode negociar portas UDP dinamicamente com `server-udp-ports` vazio. [Guia oficial do NetherNet no Bedrock Dedicated Server](https://help.minecraft.net/hc/en-us/articles/49914677714957)
+O add-on não cria regras no roteador. Faça o encaminhamento manual, sempre para o IP local fixo do Home Assistant. Exemplo para uma instância na porta 19132:
 
-### Faixa UDP fixa em redes que precisam de encaminhamento
+| Protocolo | Porta externa | Destino | Porta interna |
+| --- | ---: | --- | ---: |
+| TCP | 19132 | IP local do Home Assistant | 19132 |
+| UDP | Faixa de jogo configurada | IP local do Home Assistant | Mesma faixa, mapeamento um a um |
 
-A tabela mostra uma configuração de exemplo para redes em que o encaminhamento UDP precisa usar uma faixa fixa. Crie uma regra TCP para a sinalização e outra regra UDP para a faixa de jogo. Use o IP reservado do Home Assistant. Se houver firewall no host, permita também a faixa UDP local.
+Para permitir mais de uma instância, encaminhe a porta TCP de jogo de cada uma. Defina também uma faixa UDP distinta por instância em seu próprio `server.properties`, na chave `server-udp-ports`, e encaminhe essa faixa para o mesmo intervalo interno. Uma divisão possível é:
 
-| Protocolo | Porta externa | Destino local | Porta interna |
-| --- | --- | --- | --- |
-| TCP | `19132` | `192.168.1.50` | `19132` |
-| UDP | `19140–19155` | `192.168.1.50` | `19140–19155` |
+| Instância | TCP de entrada | Faixa UDP de exemplo |
+| ---: | ---: | ---: |
+| 1 | 19132 | 19140–19155 |
+| 2 | 19134 | 19156–19171 |
+| 3 | 19136 | 19172–19187 |
+| 4 | 19138 | 19188–19203 |
+| 5 | 19140 | 19204–19219 |
 
-Os nomes e caminhos do menu variam entre fabricantes. Procure funções como **Encaminhamento de portas**, **Port Forwarding**, **Servidor virtual** ou **NAT**. Configure o protocolo, a porta ou faixa externa, o IP local de destino e a porta ou faixa interna. Para o exemplo UDP, encaminhe cada porta externa à porta interna correspondente, de `19140 → 19140` até `19155 → 19155`. Se o seu roteador esconder um campo de porta interna ao escolher uma faixa, confira o manual para saber como representar o mapeamento um a um. Revise as portas salvas para confirmar que a faixa UDP não está sendo enviada inteira para uma única porta interna.
-
-Com o add-on parado, ajuste as propriedades existentes em `/share/minecraftRCON/server.properties` e inicie-o novamente.
+Com a instância parada, edite `/share/minecraftRCON-Multi/instances/<id>/server.properties` e reinicie o add-on. Um formato fixo aceito pelo servidor é `server-udp-ports=<início>-<fim>:<início>-<fim>`. Por exemplo, para a primeira faixa:
 
 ~~~properties
-transport=nethernet
-server-port=19132
-server-ip=
-server-udp-ports=203.0.113.10:19140-19155:19140-19155
+server-udp-ports=19140-19155:19140-19155
 ~~~
 
-Troque `203.0.113.10` pelo seu **IPv4 público atual**. Os campos são, em ordem, o IP público, a faixa UDP externa e a faixa UDP interna. Use um IP numérico nesse campo. O domínio fica no endereço de conexão do cliente. A configuração acima foi validada em uma instalação que também tinha uma regra UDP individual em `19132`. Se já tiver essa regra e quiser removê-la, desative somente ela e confirme uma nova entrada de fora da sua rede antes de excluir. [Formato de configuração UDP do Bedrock Dedicated Server](https://help.minecraft.net/hc/en-us/articles/49914677714957)
+Não copie esse exemplo sem reservar as faixas para as demais instâncias. Se sua conexão exige um IP público anunciado no arquivo, use o formato oficial `IP_PUBLICO:FAIXA_EXTERNA:FAIXA_INTERNA` e atualize esse IP quando ele mudar. Não use o hostname DuckDNS nesse campo. Revise o manual do roteador: uma faixa precisa manter o mapeamento externo→interno porta a porta.
 
-Como o add-on usa a rede do próprio host, ajuste essas regras no roteador e no firewall da rede. No jogo, os jogadores continuam usando a porta **19132**.
+Não encaminhe as APIs de gerenciamento TCP `19133–19137`. Restrinja-as à rede local ou VPN e use `rcon_allowed_ips` como filtro adicional.
 
-## 3. Configure um nome DNS
+## DuckDNS
 
-DuckDNS e Cloudflare são duas formas de atribuir um nome ao IPv4 público. Você pode usar qualquer uma delas ou manter as duas.
+1. Crie ou use um subdomínio em [DuckDNS](https://www.duckdns.org/) e configure o app Duck DNS do Home Assistant com o token da conta.
+2. Confirme nos logs do app que o registro A aponta para o IPv4 público atual.
+3. No Minecraft, adicione o hostname sem `http://` ou `https://`. Informe a porta TCP de jogo da instância, por exemplo `19132` para a primeira ou `19134` para a segunda.
 
-### DuckDNS
+Um nome DuckDNS aponta para o endereço IP; ele não cria encaminhamento de porta nem traduz o tráfego do Minecraft. Para serviços em portas diferentes, use o mesmo hostname e informe a porta do mundo na entrada do jogo.
 
-1. Entre no [DuckDNS](https://www.duckdns.org/), crie um subdomínio e copie o token da sua conta.
-2. No Home Assistant, instale o aplicativo oficial **Duck DNS**. Na aba **Configuração**, use o seu subdomínio completo em `domains` e o token em `token`. Salve e inicie o aplicativo.
-3. Confira os logs do Duck DNS e verifique se o registro IPv4 do hostname coincide com o IPv4 público do roteador.
+## Cloudflare DNS
 
-O exemplo abaixo configura apenas a atualização de DNS.
+Crie um registro **A** para o IPv4 público e deixe **Proxy status: DNS only** (nuvem cinza). O proxy HTTP normal da Cloudflare não transporta o tráfego UDP do jogo. A porta encaminhada no roteador continua necessária. Um plano/produto específico que ofereça proxy UDP é uma arquitetura separada.
 
-~~~yaml
-domains:
-  - seu-servidor.duckdns.org
-token: "COLE_AQUI_O_TOKEN_DO_DUCKDNS"
-aliases: []
-seconds: 300
-lets_encrypt:
-  accept_terms: false
-  algo: secp384r1
-  certfile: fullchain.pem
-  keyfile: privkey.pem
-~~~
+DuckDNS e Cloudflare DNS podem coexistir; cada nome precisa apontar ao IP público atual. Se escolher apontar um CNAME de DuckDNS para seu domínio Cloudflare, mantenha a política DNS-only e confira a atualização do endereço.
 
-Se o Duck DNS já estiver configurado para outros serviços, preserve o token, os domínios e as opções de certificado atuais. O Minecraft usa o nome em `domains` e a porta `19132`. [Documentação do aplicativo Duck DNS para Home Assistant](https://github.com/home-assistant/apps/blob/master/duckdns/DOCS.md)
+## Testar
 
-### Cloudflare
+1. Em outro acesso à internet, desligue o Wi-Fi do celular e use 4G/5G.
+2. No Minecraft, adicione o hostname como endereço e a porta TCP de jogo configurada como porta. Não inclua esquema HTTP.
+3. Confirme a entrada no mundo e procure a entrada do jogador nos logs/eventos da instância.
+4. Se o servidor aparecer na lista, mas a entrada falhar, verifique a faixa UDP e o endereço anunciado. Uma resposta HTTP na porta TCP não comprova que o UDP funciona.
 
-1. Abra na Cloudflare uma zona DNS ativa de um domínio seu e vá a **DNS → Registros**.
-2. Crie um registro **A**. Use `minecraft` como nome para obter um endereço como `minecraft.example.com`. Informe o **IPv4 público** atual no destino.
-3. Em **Status do proxy**, selecione **Somente DNS (DNS only)**, com a nuvem cinza. Salve. O cliente do jogo vai se conectar diretamente ao seu roteador. O encaminhamento de portas da seção anterior continua necessário. [Status do proxy DNS da Cloudflare](https://developers.cloudflare.com/dns/proxy-status/)
+## Diagnóstico rápido
 
-### Quando o IPv4 público mudar
-
-O aplicativo Duck DNS atualiza o registro do DuckDNS periodicamente. Se você cadastrou um registro **A** direto na Cloudflare, atualize também esse registro. Se declarou um IPv4 explícito em `server-udp-ports`, atualize-o em `server.properties` e reinicie o add-on. Nesse caso, atualizar o DNS sozinho pode fazer a sinalização voltar a funcionar enquanto o servidor ainda anuncia o IP antigo para UDP.
-
-## 4. Teste de fora da rede
-
-1. No celular, desligue o Wi-Fi e confirme que o 4G/5G está ativo. Use uma versão compatível do Minecraft Bedrock e entre na sua conta Microsoft.
-2. Abra **Jogar → Servidores → Adicionar servidor**. No campo **Endereço**, use somente o nome, como `seu-servidor.duckdns.org` ou `minecraft.example.com`. No campo **Porta**, informe `19132`.
-3. Confira **Configurações → Geral → opção de dados móveis para jogo on-line** no próprio Minecraft. No Android usado na validação, desativar o uso automático nessa opção e confirmar o uso de dados móveis quando o jogo perguntou permitiu avançar. Se o jogo travar antes de entrar mesmo com dados móveis ativos, reproduza esse ajuste e abra o jogo novamente. O texto da opção e do aviso pode variar por versão.
-4. Confirme que entrou de fato no mundo. No Home Assistant, confira o registro da entrada do seu jogador na aba **Logs** ou em `/share/minecraftRCON/server.log`.
-
-### Se a lista mostra o servidor, mas o mundo não abre
-
-| Sintoma | O que conferir |
+| Sintoma | Verificação |
 | --- | --- |
-| Funciona no Wi-Fi e fica na tela de voltar ou carregando no 4G/5G | Confira primeiro a opção de dados móveis do próprio Minecraft. Faça uma conexão nova já fora do Wi-Fi. |
-| O domínio não resolve ou aponta para outro IP | Compare a resposta de `nslookup seu-servidor.duckdns.org` ou `nslookup minecraft.example.com` com o IPv4 público atual. Na Cloudflare, confira se a nuvem está cinza. |
-| O servidor aparece no jogo ou `GET /v1/join` responde HTTP 200, mas a entrada falha | A consulta confirma a sinalização TCP. Confira separadamente a faixa UDP, a correspondência entre portas externas e internas e o IPv4 anunciado, se configurado. |
-| O jogo rejeita a entrada | Confira a compatibilidade entre a versão Bedrock do cliente e a do servidor, as permissões de multijogador da conta Microsoft e o Gamertag na lista de jogadores. |
+| Nome resolve para IP antigo | Confira o registro A e o atualizador DuckDNS/Cloudflare. |
+| Funciona na rede local, não no 4G/5G | Revise IPv4 público, CGNAT, encaminhamento TCP, faixa UDP, firewall e configuração de dados móveis do Minecraft. |
+| A instância não inicia após escolher outra porta | Verifique se os pares UDP não se sobrepõem e se o host não usa essas portas em outro serviço. |
+| O mundo certo não abre | Confira ID, `world_name`, nome da pasta dentro de `worlds/` e versão Bedrock do cliente. |
 
-Para conferir só a sinalização TCP a partir de outra rede, use `curl --max-time 5 -i http://minecraft.example.com:19132/v1/join` com seu próprio endereço. Para verificar o UDP, entre no mundo pelo jogo.
-
-Na instalação validada, foi preciso ajustar tanto a opção de dados móveis do Minecraft quanto o encaminhamento UDP do roteador. Depois dos dois ajustes, a entrada no mundo funcionou pelo DuckDNS e pelo domínio na Cloudflare.
+O nome de menus e os campos variam por roteador. Para o encaminhamento, informe protocolo, porta externa, endereço local do Home Assistant e porta/faixa interna. Preserve regras existentes de outros serviços.

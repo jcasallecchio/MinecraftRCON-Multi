@@ -38,6 +38,7 @@ $APP_USERNAME = getenv('APP_USERNAME') ?: '';
 $APP_PASSWORD_HASH = getenv('APP_PASSWORD_HASH') ?: '';
 $BEDROCK_API_URL = rtrim(getenv('BEDROCK_API_URL') ?: '', '/');
 $BEDROCK_API_TOKEN = getenv('BEDROCK_API_TOKEN') ?: '';
+$BEDROCK_INSTANCES_JSON = getenv('BEDROCK_INSTANCES') ?: '';
 $LOG_RETENTION_DAYS = max(1, min(30, (int)(getenv('LOG_RETENTION_DAYS') ?: 7)));
 if (strlen($APP_SECRET) < 64 || $APP_USERNAME === '' || $APP_PASSWORD_HASH === '') {
     throw new RuntimeException('Configuração de autenticação inválida no .env.');
@@ -221,12 +222,42 @@ function cleanup_expired_logs(): void
         file_put_contents($marker, (string)time(), LOCK_EX);
     });
 }
-function bedrock_request(string $path, string $method = 'GET', ?array $payload = null): array
+function bedrock_instance_configs(): array
 {
-    if ($GLOBALS['BEDROCK_API_TOKEN'] === '') {
-        return ['ok' => false, 'http_status' => 0, 'error' => 'Token do Bedrock não configurado em BEDROCK_API_TOKEN no .env.', 'data' => null];
+    $raw = (string)$GLOBALS['BEDROCK_INSTANCES_JSON'];
+    $configured = $raw !== '' ? json_decode($raw, true) : null;
+    $instances = [];
+    if (is_array($configured)) {
+        foreach ($configured as $entry) {
+            if (!is_array($entry)) continue;
+            $id = (string)($entry['id'] ?? '');
+            $url = rtrim((string)($entry['url'] ?? ''), '/');
+            $token = (string)($entry['token'] ?? '');
+            $name = trim((string)($entry['name'] ?? $id));
+            if (!preg_match('/^[a-z0-9][a-z0-9_-]{0,31}$/', $id) || $url === '' || $token === '') continue;
+            $instances[$id] = ['id' => $id, 'name' => $name !== '' ? $name : $id, 'url' => $url, 'token' => $token];
+        }
     }
-    $url = $GLOBALS['BEDROCK_API_URL'] . $path;
+    if ($instances === [] && $GLOBALS['BEDROCK_API_URL'] !== '' && $GLOBALS['BEDROCK_API_TOKEN'] !== '') {
+        $instances['main'] = ['id' => 'main', 'name' => 'Servidor Bedrock', 'url' => $GLOBALS['BEDROCK_API_URL'], 'token' => $GLOBALS['BEDROCK_API_TOKEN']];
+    }
+    return $instances;
+}
+function bedrock_instance_public_list(): array
+{
+    return array_values(array_map(static fn(array $item): array => ['id' => $item['id'], 'name' => $item['name']], bedrock_instance_configs()));
+}
+function bedrock_instance_config(string $instanceId): ?array
+{
+    return bedrock_instance_configs()[$instanceId] ?? null;
+}
+function bedrock_request(string $path, string $method = 'GET', ?array $payload = null, string $instanceId = 'main'): array
+{
+    $instance = bedrock_instance_config($instanceId);
+    if ($instance === null) {
+        return ['ok' => false, 'http_status' => 0, 'error' => 'Instância Bedrock inválida ou sem configuração no .env.', 'data' => null];
+    }
+    $url = $instance['url'] . $path;
     $parts = parse_url($url);
     if (!is_array($parts) || !in_array(strtolower((string)($parts['scheme'] ?? '')), ['http', 'https'], true) || empty($parts['host'])) {
         return ['ok' => false, 'http_status' => 0, 'error' => 'BEDROCK_API_URL inválida no .env.', 'data' => null];
@@ -238,7 +269,7 @@ function bedrock_request(string $path, string $method = 'GET', ?array $payload =
     if ($ch === false) {
         return ['ok' => false, 'http_status' => 0, 'error' => 'Não foi possível iniciar o cliente HTTP.', 'data' => null];
     }
-    $headers = ['Accept: application/json', 'Authorization: Bearer ' . $GLOBALS['BEDROCK_API_TOKEN']];
+    $headers = ['Accept: application/json', 'Authorization: Bearer ' . $instance['token']];
     if ($payload !== null) {
         $headers[] = 'Content-Type: application/json';
     }

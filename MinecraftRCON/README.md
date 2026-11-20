@@ -1,9 +1,9 @@
-# Bedrock Server with RCON
+# MinecraftRCON Multi
 
-Hospede um servidor dedicado de Minecraft Bedrock no Home Assistant OS. O add-on baixa o servidor oficial, verifica atualizações na inicialização e fornece uma API HTTP para comandos, telemetria e backups do mundo.
+Gerencie até cinco servidores dedicados Minecraft Bedrock simultâneos no Home Assistant. Cada instância mantém seu mundo, processo, API RCON, eventos, estatísticas e backups isolados.
 
-- **Primeiro acesso.** Configure um token aleatório com pelo menos 32 caracteres em `rcon_token`, inicie o add-on e conecte o jogo ao IP local do Home Assistant na porta **19132**.
-- **Jogo pela internet.** Configure o encaminhamento de portas do NetherNet e, se quiser um nome fixo, use DuckDNS ou um registro DNS na Cloudflare.
-- **Administração.** A API fica na porta **19133/TCP**. Permita acesso somente pela rede de confiança ou por uma VPN.
+1. Defina um `rcon_token` aleatório de pelo menos 32 caracteres.
+2. Configure `instances_json` com IDs, nomes, mundos e portas UDP.
+3. Inicie o add-on e conecte cada jogador ao IP do Home Assistant e à porta de jogo correspondente.
 
-Consulte a aba **Documentação** ou o [guia de instalação e configuração no GitHub](https://github.com/jcasallecchio/MinecraftRCON/blob/main/MinecraftRCON/DOCS.md). Para jogar fora de casa, siga o [guia de acesso pela internet](https://github.com/jcasallecchio/MinecraftRCON/blob/main/docs/acesso-remoto.md).
+O painel web MineDev é opcional. Consulte a aba **Documentação** ou [Instalação e configuração](DOCS.md), [Acesso externo](../docs/acesso-remoto.md) e [MineDev Console](../console/README.md). As APIs RCON ficam em `19233–19237/TCP`; restrinja-as à rede local ou VPN e não as encaminhe pela internet.

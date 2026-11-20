@@ -1,22 +1,57 @@
 {
-  "name": "Bedrock Server with RCON",
-  "version": "1.7.0",
-  "slug": "bedrock_server_rcon",
-  "description": "Minecraft Bedrock Server with RCON via stdin for Home Assistant",
+  "name": "MinecraftRCON Multi",
+  "version": "0.1.0",
+  "slug": "minecraft_rcon_multi",
+  "description": "Gerenciador de até cinco servidores Minecraft Bedrock simultâneos com RCON",
   "startup": "services",
   "boot": "auto",
   "host_network": true,
   "privileged": ["NET_ADMIN"],
   "ingress": false,
-  "arch": ["aarch64", "amd64", "armv7", "i386"],
+  "arch": ["amd64"],
   "ports": {
-    "19132/udp": 19132
+    "19132/udp": 19132,
+    "19133/udp": 19133,
+    "19134/udp": 19134,
+    "19135/udp": 19135,
+    "19136/udp": 19136,
+    "19137/udp": 19137,
+    "19138/udp": 19138,
+    "19139/udp": 19139,
+    "19140/udp": 19140,
+    "19141/udp": 19141,
+    "19233/tcp": 19233,
+    "19234/tcp": 19234,
+    "19235/tcp": 19235,
+    "19236/tcp": 19236,
+    "19237/tcp": 19237
+  },
+  "ports_description": {
+    "19132/udp": "Jogo: instância configurada na posição 1",
+    "19133/udp": "Porta IPv6 da instância 1; não encaminhe separadamente",
+    "19134/udp": "Jogo: instância configurada na posição 2",
+    "19135/udp": "Porta IPv6 da instância 2; não encaminhe separadamente",
+    "19136/udp": "Jogo: instância configurada na posição 3",
+    "19137/udp": "Porta IPv6 da instância 3; não encaminhe separadamente",
+    "19138/udp": "Jogo: instância configurada na posição 4",
+    "19139/udp": "Porta IPv6 da instância 4; não encaminhe separadamente",
+    "19140/udp": "Jogo: instância configurada na posição 5",
+    "19141/udp": "Porta IPv6 da instância 5; não encaminhe separadamente",
+    "19233/tcp": "API RCON da instância 1; não encaminhe para a internet",
+    "19234/tcp": "API RCON da instância 2; não encaminhe para a internet",
+    "19235/tcp": "API RCON da instância 3; não encaminhe para a internet",
+    "19236/tcp": "API RCON da instância 4; não encaminhe para a internet",
+    "19237/tcp": "API RCON da instância 5; não encaminhe para a internet"
   },
   "map": ["share:rw"],
   "schema": {
     "rcon_token": "password?",
     "rcon_allowed_ips": "str?",
     "backup_interval_hours": "int?",
-    "backup_keep_count": "int?"
+    "backup_keep_count": "int?",
+    "instances_json": "str?"
+  },
+  "options": {
+    "instances_json": "[{\"id\":\"main\",\"name\":\"Abydos\",\"world_name\":\"Abydos\",\"udp_port\":19132}]"
   }
 }

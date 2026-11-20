@@ -16,7 +16,7 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
   <meta name="csrf-token" content="<?= htmlspecialchars((string)$_SESSION['csrf'], ENT_QUOTES, 'UTF-8') ?>">
   <meta name="theme-color" content="#10140f">
   <title>MineDev Console</title>
-  <link rel="stylesheet" href="assets/app.css?v=14">
+  <link rel="stylesheet" href="assets/app.css?v=15">
 </head>
 <body class="<?= $isAuthenticated ? 'authenticated' : 'guest' ?>">
   <div class="ambient ambient-one"></div>
@@ -56,7 +56,7 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
   <div class="app-shell" id="appShell" <?= !$isAuthenticated ? 'hidden' : '' ?>>
     <header class="topbar">
       <a class="brand-mark" href="#" aria-label="MineDev Console"><span class="pixel-cube">▦</span><span>MINE<span class="accent">DEV</span></span></a>
-      <div class="topbar-center"><span class="crumb-muted">SERVIDORES</span><span class="crumb-sep">/</span><span class="crumb-current">BEDROCK</span></div>
+      <div class="topbar-center"><span class="crumb-muted">SERVIDORES</span><span class="crumb-sep">/</span><label class="instance-picker-label" for="instancePicker">INSTÂNCIA</label><select class="instance-picker" id="instancePicker" aria-label="Selecionar instância Minecraft"><option value="main">Carregando…</option></select></div>
       <div class="topbar-actions">
         <div class="connection-pill" id="connectionPill"><span class="status-dot"></span><span id="connectionText">Conectando</span></div>
         <span class="user-badge" id="userBadge">AD</span>
@@ -78,7 +78,7 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
         <div class="rail-label">INSTÂNCIA ATIVA</div>
         <div class="server-card">
           <div class="server-card-head"><div class="server-icon">B</div><div><div class="server-title">Servidor Bedrock</div><div class="server-edition">BEDROCK EDITION</div></div><span class="status-dot" id="railStatusDot"></span></div>
-          <div class="server-address"><span class="tiny-label">MUNDO</span><span id="worldName">Carregando…</span></div>
+          <div class="server-address"><span class="tiny-label">MUNDO · PORTA</span><span id="worldName">Carregando…</span></div>
           <div class="server-version-row"><span class="tiny-label">VERSÃO</span><span class="version-value" id="serverVersion">—</span></div>
           <div class="server-player-row"><div><span class="tiny-label">JOGADORES</span><div class="player-total"><strong id="onlineCount">—</strong><span> / <span id="maxCount">—</span></span></div></div><span class="player-orbit"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M8 1.5v13M1.5 8h13M3.4 3.4l9.2 9.2m0-9.2-9.2 9.2"/></svg></span></div>
           <div class="player-list" id="playerList"><span class="muted">Aguardando telemetria</span></div>
@@ -116,7 +116,7 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
           <div class="terminal-card">
             <div class="terminal-toolbar">
               <div class="terminal-heading"><span class="terminal-lamp"></span><div><strong>Terminal do servidor</strong><small>entrada nativa · minecraft-bedrock</small></div></div>
-              <div class="terminal-actions"><span class="terminal-live"><span class="pulse"></span> LIVE</span><button type="button" class="ghost-button" id="helpButton">Ajuda do servidor</button><button type="button" class="ghost-button" id="clearTerminal">Limpar tela</button></div>
+              <div class="terminal-actions"><span class="terminal-live"><span class="pulse"></span> LIVE</span><button type="button" class="ghost-button" id="instanceControlButton">Parar instância</button><button type="button" class="ghost-button" id="instanceRestartButton">Reiniciar</button><button type="button" class="ghost-button" id="helpButton">Ajuda do servidor</button><button type="button" class="ghost-button" id="clearTerminal">Limpar tela</button></div>
             </div>
             <div class="terminal-output" id="terminalOutput" role="log" aria-live="polite" aria-label="Saída do console">
               <div class="terminal-line system"><span class="line-time">--:--:--</span><span class="line-marker">◆</span><span>MineDev Console inicializado. Aguardando conexão com Bedrock.</span></div>
@@ -166,6 +166,6 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
     </div>
   </div>
   <div class="toast-region" id="toastRegion" aria-live="polite"></div>
-  <script src="assets/app.js?v=10" defer></script>
+  <script src="assets/app.js?v=11" defer></script>
 </body>
 </html>

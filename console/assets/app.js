@@ -20,6 +20,7 @@
   let historyPointer = 0;
   let selectedSuggestion = -1;
   let lastTelemetry = null;
+  let activeInstance = sessionStorage.getItem('minedev-instance') || 'main';
   let pollTimer = null;
   let activityPollTimer = null;
 
@@ -49,7 +50,8 @@
     const headers = { Accept: 'application/json' };
     if (method !== 'GET') headers['X-CSRF-Token'] = csrf;
     if (options.body !== undefined) headers['Content-Type'] = 'application/json';
-    const response = await fetch(`api.php?action=${encodeURIComponent(action)}${options.query ? `&${options.query}` : ''}`, {
+    const query = [options.query || '', `instance_id=${encodeURIComponent(activeInstance)}`].filter(Boolean).join('&');
+    const response = await fetch(`api.php?action=${encodeURIComponent(action)}&${query}`, {
       method,
       credentials: 'same-origin',
       headers,
@@ -179,7 +181,7 @@
       $('#mobilePlayerCount').textContent = state.telemetry?.players?.online_count === null || state.telemetry?.players?.online_count === undefined
         ? '— / — online'
         : `${state.telemetry.players.online_count} / ${state.telemetry.players.max_count ?? '—'} online`;
-      $('#worldName').textContent = server.world_name || '—';
+      $('#worldName').textContent = `${server.world_name || '—'} · UDP ${server.game_port ?? '—'}`;
       $('#serverVersion').textContent = server.version || '—';
       $('#onlineCount').textContent = server.status === 'offline' ? '0' : (state.telemetry?.players?.online_count ?? '—');
       $('#maxCount').textContent = state.telemetry?.players?.max_count ?? server.max_players ?? '—';
@@ -204,6 +206,10 @@
       const canCommand = running;
       $('#commandInput').disabled = !canCommand;
       $('#sendButton').disabled = !canCommand;
+      const controlButton = $('#instanceControlButton');
+      if (controlButton) { controlButton.dataset.action = running ? 'stop' : 'start'; controlButton.textContent = running ? 'Parar instância' : 'Iniciar instância'; controlButton.disabled = false; }
+      const restartButton = $('#instanceRestartButton');
+      if (restartButton) restartButton.disabled = !running;
       $('#connectionHint').textContent = running
         ? (players?.stale ? 'Telemetria de jogadores atualizando…' : `Amostra de jogadores: ${players?.sample_age_seconds ?? 0}s`)
         : (state.connection_error || 'Servidor Bedrock indisponível');
@@ -219,6 +225,17 @@
       if (showToast) toast(error.message, 'error');
     }
   }
+  async function controlInstance(action) {
+    const labels = { start: 'iniciar', stop: 'parar', restart: 'reiniciar' };
+    if (!window.confirm(`Confirma ${labels[action]} esta instância? Jogadores conectados serão desconectados em caso de parada ou reinício.`)) return;
+    try {
+      const result = await api('control', { method: 'POST', body: { action } });
+      toast(result.message || `Solicitação para ${labels[action]} enviada.`);
+      window.setTimeout(() => refreshStatus(false), 1200);
+    } catch (error) { toast(error.message, 'error'); }
+  }
+  $('#instanceControlButton')?.addEventListener('click', event => controlInstance(event.currentTarget.dataset.action || 'stop'));
+  $('#instanceRestartButton')?.addEventListener('click', () => controlInstance('restart'));
 
   async function loadCatalog() {
     try {
@@ -641,6 +658,7 @@
   $('#statsRefresh')?.addEventListener('click', loadPlayerStats);
 
   async function initializeConsole() {
+    await loadInstancePicker();
     await Promise.all([loadCatalog(), refreshStatus(), loadHistory(true)]);
     if (pollTimer) window.clearInterval(pollTimer);
     if (activityPollTimer) window.clearInterval(activityPollTimer);
@@ -651,6 +669,40 @@
     activityPollTimer = window.setInterval(() => {
       if ($('#view-activity')?.classList.contains('active')) loadPlayerEvents(activityRecords.length === 0);
     }, 5000);
+  }
+
+  async function loadInstancePicker() {
+    const picker = $('#instancePicker');
+    if (!picker) return;
+    try {
+      const payload = await api('instances');
+      const instances = Array.isArray(payload.instances) ? payload.instances : [];
+      picker.replaceChildren();
+      instances.forEach(instance => {
+        const option = document.createElement('option');
+        option.value = instance.id;
+        option.textContent = instance.name;
+        picker.append(option);
+      });
+      if (!instances.some(instance => instance.id === activeInstance)) activeInstance = instances[0]?.id || 'main';
+      picker.value = activeInstance;
+      picker.hidden = instances.length < 2;
+      picker.addEventListener('change', () => {
+        activeInstance = picker.value;
+        sessionStorage.setItem('minedev-instance', activeInstance);
+        lastTelemetry = null;
+        activityRecords = []; activityCursor = 0;
+        playerStats = [];
+        historyRecords = []; historyCursor = 0;
+        $('#terminalOutput')?.replaceChildren();
+        refreshStatus(false);
+        if ($('#view-activity')?.classList.contains('active')) loadPlayerEvents(true);
+        if ($('#view-stats')?.classList.contains('active')) loadPlayerStats();
+      });
+    } catch (error) {
+      picker.replaceChildren(new Option('Instância indisponível', 'main'));
+      if (error.status !== 401) toast(`Não foi possível carregar as instâncias: ${error.message}`, 'error');
+    }
   }
 
   if (!loginScreen.hidden) loadCsrf();

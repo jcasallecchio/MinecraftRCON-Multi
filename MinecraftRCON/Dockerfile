@@ -11,8 +11,9 @@ COPY rcon_server.py /rcon_server.py
 COPY backup_manager.py /backup_manager.py
 COPY update_transaction.py /update_transaction.py
 COPY run.sh /run.sh
-RUN chmod +x /run.sh
+COPY instance.sh /instance.sh
+RUN chmod +x /run.sh /instance.sh
 
-WORKDIR /share/minecraftRCON
+WORKDIR /share/minecraftRCON-Multi
 
 CMD ["/run.sh"]

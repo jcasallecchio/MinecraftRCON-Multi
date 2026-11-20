@@ -126,6 +126,10 @@ body.authenticated .view.active:not(#view-console){flex:1;min-height:0;overflow-
 .command-suggestion .suggestion-syntax{grid-area:syntax;grid-column:auto}
 .command-suggestion .suggestion-example{grid-area:example;grid-column:auto}
 @media(max-width:400px){.suggestion-item.command-suggestion{grid-template-columns:minmax(0,45%) minmax(0,1fr);gap:4px 12px}}
+.instance-picker-label{margin-left:14px;color:#758478;font:9px var(--mono);letter-spacing:.1em}
+.instance-picker{max-width:min(34vw,240px);margin-left:8px;padding:7px 28px 7px 10px;border:1px solid rgba(157,182,157,.2);border-radius:8px;background:#141b15;color:#dce6dc;font:11px var(--mono);cursor:pointer}
+.instance-picker:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+@media(max-width:780px){.instance-picker-label{display:none}.instance-picker{max-width:35vw;margin-left:4px;padding:6px 20px 6px 7px;font-size:9px}.topbar-center{gap:4px}}
 .command-grid{gap:8px}
 .command-card{padding:10px;text-align:left}
 .command-card-name{font-size:12px}

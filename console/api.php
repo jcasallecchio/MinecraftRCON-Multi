@@ -98,11 +98,14 @@ if ($action === 'logout') {
 
 if ($action === 'status') {
     reject_method('GET');
-    $info = bedrock_request('/api/v1/info');
-    $telemetry = bedrock_request('/api/v1/telemetry');
+    $instanceId = (string)($_GET['instance_id'] ?? 'main');
+    $instance = bedrock_instance_config($instanceId);
+    $info = bedrock_request('/api/v1/info', 'GET', null, $instanceId);
+    $telemetry = bedrock_request('/api/v1/telemetry', 'GET', null, $instanceId);
     json_response([
         'ok' => $info['ok'] && $telemetry['ok'],
-        'configured' => $GLOBALS['BEDROCK_API_TOKEN'] !== '',
+        'configured' => $instance !== null,
+        'instance' => $instance !== null ? ['id' => $instance['id'], 'name' => $instance['name']] : null,
         'connection_error' => $info['error'] ?? $telemetry['error'] ?? null,
         'info' => $info['data'],
         'telemetry' => $telemetry['data'],
@@ -111,9 +114,10 @@ if ($action === 'status') {
 
 if ($action === 'events') {
     reject_method('GET');
+    $instanceId = (string)($_GET['instance_id'] ?? 'main');
     $after = max(0, (int)($_GET['after'] ?? 0));
     $limit = max(1, min(200, (int)($_GET['limit'] ?? 100)));
-    $result = bedrock_request('/api/v1/events?after=' . $after . '&limit=' . $limit);
+    $result = bedrock_request('/api/v1/events?after=' . $after . '&limit=' . $limit, 'GET', null, $instanceId);
     if (!$result['ok']) {
         bedrock_failure($result);
     }
@@ -122,7 +126,8 @@ if ($action === 'events') {
 
 if ($action === 'player-stats') {
     reject_method('GET');
-    $result = bedrock_request('/api/v1/player-stats');
+    $instanceId = (string)($_GET['instance_id'] ?? 'main');
+    $result = bedrock_request('/api/v1/player-stats', 'GET', null, $instanceId);
     if (!$result['ok']) {
         bedrock_failure($result);
     }
@@ -141,7 +146,8 @@ if ($action === 'command') {
         audit_event(authenticated_actor(), 'command', $command, 'invalid', 'Comando vazio ou inválido.');
         json_response(['error' => ['code' => 'invalid_command', 'message' => 'Informe um comando Bedrock válido com até 1024 caracteres.']], 400);
     }
-    $result = bedrock_request('/api/v1/commands', 'POST', ['command' => $command]);
+    $instanceId = (string)($_GET['instance_id'] ?? 'main');
+    $result = bedrock_request('/api/v1/commands', 'POST', ['command' => $command], $instanceId);
     if (!$result['ok']) {
         audit_event(authenticated_actor(), 'command', $command, 'failed', (string)$result['error']);
         bedrock_failure($result);
@@ -159,6 +165,28 @@ if ($action === 'command') {
         'console_output' => $lines,
         'message' => (string)($data['message'] ?? 'Comando enviado.'),
     ]);
+}
+
+if ($action === 'control') {
+    reject_method('POST');
+    $payload = read_payload();
+    $controlAction = (string)($payload['action'] ?? '');
+    if (!in_array($controlAction, ['start', 'stop', 'restart'], true)) {
+        json_response(['error' => ['code' => 'invalid_action', 'message' => 'Ação inválida para a instância.']], 400);
+    }
+    $instanceId = (string)($_GET['instance_id'] ?? 'main');
+    $result = bedrock_request('/api/v1/control', 'POST', ['action' => $controlAction], $instanceId);
+    if (!$result['ok']) {
+        audit_event(authenticated_actor(), 'instance_' . $controlAction, '', 'failed', (string)$result['error']);
+        bedrock_failure($result);
+    }
+    audit_event(authenticated_actor(), 'instance_' . $controlAction, '', 'success', 'Instância ' . $instanceId);
+    json_response($result['data']);
+}
+
+if ($action === 'instances') {
+    reject_method('GET');
+    json_response(['instances' => bedrock_instance_public_list()]);
 }
 
 if ($action === 'history') {
