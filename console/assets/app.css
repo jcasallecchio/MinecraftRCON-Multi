@@ -159,5 +159,8 @@ body.guest .login-aside{min-height:0;height:100%;}
 .terminal-line.player-event.death .line-marker{color:var(--amber)}
 .terminal-line.player-event.leave .line-marker{color:#8da898}
 @media(min-width:781px){body.authenticated .main-content{padding-left:clamp(16px,2vw,28px);padding-right:clamp(16px,2vw,28px)}}
+.terminal-card [hidden]{display:none!important}
+.terminal-actions .output-toggle{border-color:#354b37;color:var(--green2)}
+.terminal-actions .output-toggle[aria-pressed="true"]{background:#233827;border-color:#638c4b;color:#d9f0c7}
 #logoutButton{display:grid;place-items:center;padding:0}
 .player-orbit svg{display:block;width:14px;height:14px}

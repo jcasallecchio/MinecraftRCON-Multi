@@ -13,6 +13,8 @@
   let historyCursor = 0;
   let activityCursor = 0;
   let activityLoading = false;
+  let feedInitialized = false;
+  let outputMode = 'terminal';
   let playerStats = [];
   let statsLoading = false;
   let commandHistory = [];
@@ -138,7 +140,7 @@
     $('#pageTitle').textContent = titles[name] || 'Visão geral';
     if (name === 'history' && historyRecords.length === 0) loadHistory(true);
     if (name === 'stats') loadPlayerStats();
-    if (name === 'console') $('#commandInput').focus();
+    if (name === 'console' && outputMode === 'terminal') $('#commandInput').focus();
   }
   $$('.tab').forEach(tab => tab.addEventListener('click', () => switchTab(tab.dataset.tab)));
 
@@ -304,14 +306,35 @@
     const date = timestamp ? new Date(timestamp) : new Date();
     return (Number.isNaN(date.getTime()) ? new Date() : date).toLocaleTimeString('pt-BR', { hour12: false });
   }
-  function appendTerminal(text, type = 'result', marker = '·', timestamp = null) {
-    const output = $('#terminalOutput');
+  function appendOutput(output, text, type = 'result', marker = '·', timestamp = null) {
     const line = document.createElement('div'); line.className = `terminal-line ${type}`;
     const time = document.createElement('span'); time.className = 'line-time'; time.textContent = lineTime(timestamp);
     const bullet = document.createElement('span'); bullet.className = 'line-marker'; bullet.textContent = marker;
     const value = document.createElement('span'); value.textContent = String(text);
     line.append(time, bullet, value); output.append(line); output.scrollTop = output.scrollHeight;
   }
+  function appendTerminal(text, type = 'result', marker = '·', timestamp = null) {
+    appendOutput($('#terminalOutput'), text, type, marker, timestamp);
+  }
+  function setOutputMode(mode) {
+    outputMode = mode;
+    const feed = mode === 'feed';
+    $('#terminalOutput').hidden = feed;
+    $('#feedOutput').hidden = !feed;
+    $('#commandForm').hidden = feed;
+    $('.suggestion-wrap').hidden = feed;
+    $('.terminal-footer').hidden = feed;
+    $('#clearTerminal').hidden = feed;
+    $('#outputToggle').textContent = feed ? 'Terminal' : 'Feed';
+    $('#outputToggle').setAttribute('aria-pressed', String(feed));
+    $('#outputHeading').textContent = feed ? 'Feed de jogadores' : 'Terminal do servidor';
+    $('#outputSubtitle').textContent = feed ? 'entradas · saídas · mortes' : 'entrada nativa · minecraft-bedrock';
+    hideSuggestions();
+    const output = feed ? $('#feedOutput') : $('#terminalOutput');
+    output.scrollTop = output.scrollHeight;
+    if (feed && !feedInitialized) loadPlayerEvents(true);
+  }
+  $('#outputToggle')?.addEventListener('click', () => setOutputMode(outputMode === 'feed' ? 'terminal' : 'feed'));
   function hideSuggestions() { $('#suggestions').hidden = true; selectedSuggestion = -1; }
 
   const commonArgs = {
@@ -463,6 +486,7 @@
   async function executeCommand(rawCommand) {
     const command = rawCommand.trim();
     if (!command) return;
+    if (outputMode === 'feed') setOutputMode('terminal');
     $('#commandInput').value = ''; hideSuggestions();
     commandHistory.push(command); historyPointer = commandHistory.length;
     appendTerminal(command, 'command', '›');
@@ -537,7 +561,7 @@
     const markers = { join: '↗', leave: '↙', death: '✕' };
     if (!Object.hasOwn(labels, event.type)) return;
     const detail = event.type === 'death' && event.detail ? ` — ${event.detail}` : '';
-    appendTerminal(`${player} ${labels[event.type]}${detail}`, `player-event ${event.type}`, markers[event.type], event.timestamp);
+    appendOutput($('#feedOutput'), `${player} ${labels[event.type]}${detail}`, `player-event ${event.type}`, markers[event.type], event.timestamp);
   }
 
   async function loadPlayerEvents(reset = false) {
@@ -549,14 +573,19 @@
       const payload = await api('events', { query });
       if (requestedInstance !== activeInstance) return;
       const incoming = Array.isArray(payload.events) ? payload.events : [];
-      if (reset) activityCursor = 0;
+      if (reset) {
+        activityCursor = 0;
+        $('#feedOutput').replaceChildren();
+        appendOutput($('#feedOutput'), 'Atividade do mundo selecionado. Exibindo até 20 eventos recentes.', 'system', '◆');
+      }
       incoming.filter(event => Number(event.id) > activityCursor).forEach(event => {
         appendPlayerEvent(event);
         activityCursor = Number(event.id);
       });
+      feedInitialized = true;
     } catch (error) {
       if (requestedInstance !== activeInstance) return;
-      if (error.status !== 401 && reset) appendTerminal(`Eventos de jogadores indisponíveis: ${error.message}`, 'warning', '!');
+      if (error.status !== 401 && reset) appendOutput($('#feedOutput'), `Eventos de jogadores indisponíveis: ${error.message}`, 'warning', '!');
       if (error.status === 401) window.location.reload();
     } finally { if (activityLoading === requestedInstance) activityLoading = false; }
   }
@@ -636,7 +665,7 @@
 
   async function initializeConsole() {
     await loadInstancePicker();
-    await Promise.all([loadCatalog(), refreshStatus(), loadHistory(true), loadPlayerEvents(true)]);
+    await Promise.all([loadCatalog(), refreshStatus(), loadHistory(true)]);
     if (pollTimer) window.clearInterval(pollTimer);
     if (activityPollTimer) window.clearInterval(activityPollTimer);
     pollTimer = window.setInterval(() => {
@@ -644,7 +673,7 @@
       if ($('#view-stats')?.classList.contains('active')) loadPlayerStats();
     }, 15000);
     activityPollTimer = window.setInterval(() => {
-      loadPlayerEvents(activityCursor === 0);
+      if (outputMode === 'feed') loadPlayerEvents(!feedInitialized);
     }, 5000);
   }
 
@@ -669,9 +698,11 @@
         sessionStorage.setItem('minedev-instance', activeInstance);
         lastTelemetry = null;
         activityCursor = 0;
+        feedInitialized = false;
         playerStats = [];
         historyRecords = []; historyCursor = 0;
         $('#terminalOutput')?.replaceChildren();
+        $('#feedOutput')?.replaceChildren();
         setConnection(false, 'Conectando…');
         $('#worldName').textContent = 'Carregando…';
         $('#worldPort').textContent = 'UDP —';
@@ -679,7 +710,7 @@
         $('#connectionHint').textContent = `Consultando ${picker.selectedOptions[0]?.textContent || activeInstance}…`;
         renderPlayerStats();
         refreshStatus(false);
-        loadPlayerEvents(true);
+        if (outputMode === 'feed') loadPlayerEvents(true);
         if ($('#view-stats')?.classList.contains('active')) loadPlayerStats();
       });
     } catch (error) {

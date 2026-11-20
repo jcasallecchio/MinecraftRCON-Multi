@@ -15,7 +15,7 @@
 - **Até cinco servidores Bedrock ativos ao mesmo tempo.** Cada instância tem mundo, propriedades, logs, backups, feed, estatísticas e sessão de processo próprios.
 - **Portas independentes.** Cada instância usa a porta configurada para sinalização TCP e tráfego UDP NetherNet, além de uma porta TCP própria para a API RCON.
 - **Atualização automática do Bedrock.** Cada instância consulta a distribuição oficial na inicialização e preserva seu mundo e arquivos próprios durante atualizações.
-- **MineDev Console multi-instância.** Selecione um servidor para ver telemetria, eventos de jogadores no terminal e estatísticas; envie comandos e inicie, pare ou reinicie o servidor selecionado.
+- **MineDev Console multi-instância.** Selecione um servidor para ver telemetria, alternar Terminal/Feed de jogadores no mesmo quadro e consultar estatísticas; envie comandos e inicie, pare ou reinicie o servidor selecionado.
 - **Backups e restauração por mundo.** Agendamento, retenção e operação autenticada são separados por instância.
 - **Padrões de acesso claros.** A allowlist de jogadores começa desligada; o envio opcional de telemetria do servidor Bedrock à Mojang/Microsoft começa ligado, com controles para ambos.
 

@@ -16,7 +16,7 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
   <meta name="csrf-token" content="<?= htmlspecialchars((string)$_SESSION['csrf'], ENT_QUOTES, 'UTF-8') ?>">
   <meta name="theme-color" content="#10140f">
   <title>MineDev Console</title>
-  <link rel="stylesheet" href="assets/app.css?v=16">
+  <link rel="stylesheet" href="assets/app.css?v=17">
 </head>
 <body class="<?= $isAuthenticated ? 'authenticated' : 'guest' ?>">
   <div class="ambient ambient-one"></div>
@@ -117,13 +117,14 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
         <section class="view active" id="view-console" data-view="console">
           <div class="terminal-card">
             <div class="terminal-toolbar">
-              <div class="terminal-heading"><span class="terminal-lamp"></span><div><strong>Terminal do servidor</strong><small>entrada nativa · minecraft-bedrock</small></div></div>
-              <div class="terminal-actions"><span class="terminal-live"><span class="pulse"></span> LIVE</span><button type="button" class="ghost-button" id="instanceControlButton">Parar instância</button><button type="button" class="ghost-button" id="instanceRestartButton">Reiniciar</button><button type="button" class="ghost-button" id="clearTerminal">Limpar tela</button></div>
+              <div class="terminal-heading"><span class="terminal-lamp"></span><div><strong id="outputHeading">Terminal do servidor</strong><small id="outputSubtitle">entrada nativa · minecraft-bedrock</small></div></div>
+              <div class="terminal-actions"><span class="terminal-live"><span class="pulse"></span> LIVE</span><button type="button" class="ghost-button" id="instanceControlButton">Parar instância</button><button type="button" class="ghost-button" id="instanceRestartButton">Reiniciar</button><button type="button" class="ghost-button output-toggle" id="outputToggle" aria-pressed="false">Feed</button><button type="button" class="ghost-button" id="clearTerminal">Limpar tela</button></div>
             </div>
             <div class="terminal-output" id="terminalOutput" role="log" aria-live="polite" aria-label="Saída do console">
               <div class="terminal-line system"><span class="line-time">--:--:--</span><span class="line-marker">◆</span><span>MineDev Console inicializado. Aguardando conexão com Bedrock.</span></div>
               <div class="terminal-line hint"><span class="line-time">INFO</span><span class="line-marker">›</span><span>Digite <code>help</code> para ajuda ou comece a escrever para ver sugestões.</span></div>
             </div>
+            <div class="terminal-output" id="feedOutput" role="log" aria-live="polite" aria-label="Feed de jogadores" hidden></div>
             <div class="suggestion-wrap"><div class="suggestions" id="suggestions" hidden></div></div>
             <form id="commandForm" class="command-form" autocomplete="off">
               <span class="command-prefix">›</span><input id="commandInput" name="command" type="text" maxlength="1024" spellcheck="false" placeholder="Digite um comando Bedrock…" aria-label="Comando Minecraft" disabled>
@@ -162,6 +163,6 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
     </div>
   </div>
   <div class="toast-region" id="toastRegion" aria-live="polite"></div>
-  <script src="assets/app.js?v=14" defer></script>
+  <script src="assets/app.js?v=15" defer></script>
 </body>
 </html>
