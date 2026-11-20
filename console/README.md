@@ -79,6 +79,12 @@ Para trocar o usuário ou a senha, execute `php tools/set-login.php`. Se o PHP l
 6. O quadro do **Console** abre em **Terminal**, com comandos e retornos. Clique em **Feed** para ver, no mesmo quadro, entradas, saídas e mortes do mundo selecionado; o botão passa a **Terminal** para voltar. O campo de comandos permanece na mesma posição nas duas visualizações; ao enviar um comando pelo Feed, o painel volta ao Terminal para mostrar o retorno. O Feed carrega até 20 eventos recentes e consulta novos eventos automaticamente a cada cinco segundos enquanto está aberto. **Limpar tela** limpa a visualização aberta, sem apagar o histórico persistente; os eventos do Feed reaparecem quando ele é carregado novamente. O add-on mantém os eventos do Feed por até sete dias.
 7. Em **Estatísticas**, compare tempo jogado, sessões, saídas, mortes e última atividade por jogador. Os totais são persistidos pelo add-on sem expiração e continuam acumulando entre reinicializações.
 
+### No celular e como aplicativo
+
+O seletor de instâncias aparece no centro da barra superior do celular quando há mais de um mundo configurado. Ao trocar de instância, telemetria, comandos, Feed e estatísticas passam a usar o mundo escolhido.
+
+Para instalar, abra o MineDev por **HTTPS** no navegador do celular. No Chrome para Android, use o menu **⋮ → Instalar app** (ou **Adicionar à tela inicial**, conforme a versão). No Safari para iPhone, use **Compartilhar → Adicionar à Tela de Início**. O manifesto e os ícones estão em `manifest.json` e `assets/`. O aplicativo instalado continua exigindo login e conexão com o servidor; dados de autenticação e da API não são guardados para uso offline.
+
 A API confirma o envio ao console do Bedrock e pode retornar linhas recentes. Confira o efeito de um comando no jogo ou nos logs do add-on.
 
 ## Acesso e solução de problemas

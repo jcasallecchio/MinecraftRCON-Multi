@@ -170,3 +170,11 @@ body.guest .login-aside{min-height:0;height:100%;}
   body.authenticated #view-stats .stats-tools{margin-bottom:8px}
   body.authenticated #view-stats .catalog-note{margin-top:8px;padding:8px 12px}
 }
+@media(max-width:780px){
+  body.authenticated .topbar{gap:8px;padding:0 12px}
+  body.authenticated .topbar-center{position:static;left:auto;transform:none;display:flex;flex:1;justify-content:center;min-width:0;gap:0}
+  body.authenticated .topbar-center .crumb-muted,body.authenticated .topbar-center .crumb-sep,body.authenticated .instance-picker-label{display:none}
+  body.authenticated .instance-picker{display:block;width:100%;max-width:190px;min-width:0;margin:0;font-size:10px;text-overflow:ellipsis}
+  body.authenticated .topbar-actions{flex:none}
+  body.authenticated .topbar-actions .connection-pill,body.authenticated .topbar-actions .user-badge{display:none}
+}
