@@ -163,3 +163,4 @@ body.guest .login-aside{min-height:0;height:100%;}
 @media(max-width:780px){body.authenticated .terminal-toolbar{height:auto;min-height:48px;flex:0 0 auto;flex-wrap:wrap;gap:4px;padding:7px 9px}.terminal-actions{flex-wrap:wrap;justify-content:flex-end;margin-left:auto;max-width:100%}}
 #logoutButton{display:grid;place-items:center;padding:0}
 .player-orbit svg{display:block;width:14px;height:14px}
+#outputToggle{min-width:62px;text-align:center}

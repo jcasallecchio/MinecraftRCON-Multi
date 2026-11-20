@@ -321,9 +321,6 @@
     const feed = mode === 'feed';
     $('#terminalOutput').hidden = feed;
     $('#feedOutput').hidden = !feed;
-    $('#commandForm').hidden = feed;
-    $('.suggestion-wrap').hidden = feed;
-    $('.terminal-footer').hidden = feed;
     $('#outputToggle').textContent = feed ? 'Terminal' : 'Feed';
     $('#outputToggle').setAttribute('aria-pressed', String(feed));
     $('#outputHeading').textContent = feed ? 'Feed de jogadores' : 'Terminal do servidor';
