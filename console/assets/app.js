@@ -11,7 +11,6 @@
   let activeCategory = 'Todos';
   let historyRecords = [];
   let historyCursor = 0;
-  let activityRecords = [];
   let activityCursor = 0;
   let activityLoading = false;
   let playerStats = [];
@@ -135,10 +134,9 @@
   function switchTab(name) {
     $$('.tab').forEach(tab => tab.classList.toggle('active', tab.dataset.tab === name));
     $$('.view').forEach(view => view.classList.toggle('active', view.dataset.view === name));
-    const titles = { console: 'Visão geral', activity: 'Feed ao vivo', stats: 'Estatísticas', commands: 'Referência', history: 'Histórico' };
+    const titles = { console: 'Visão geral', stats: 'Estatísticas', commands: 'Referência', history: 'Histórico' };
     $('#pageTitle').textContent = titles[name] || 'Visão geral';
     if (name === 'history' && historyRecords.length === 0) loadHistory(true);
-    if (name === 'activity') loadPlayerEvents(activityRecords.length === 0);
     if (name === 'stats') loadPlayerStats();
     if (name === 'console') $('#commandInput').focus();
   }
@@ -183,7 +181,8 @@
       $('#mobilePlayerCount').textContent = state.telemetry?.players?.online_count === null || state.telemetry?.players?.online_count === undefined
         ? '— / — online'
         : `${state.telemetry.players.online_count} / ${state.telemetry.players.max_count ?? '—'} online`;
-      $('#worldName').textContent = `${server.world_name || '—'} · UDP ${server.game_port ?? '—'}`;
+      $('#worldName').textContent = server.world_name || '—';
+      $('#worldPort').textContent = `UDP ${server.game_port ?? '—'}`;
       $('#serverVersion').textContent = server.version || '—';
       $('#onlineCount').textContent = server.status === 'offline' ? '0' : (state.telemetry?.players?.online_count ?? '—');
       $('#maxCount').textContent = state.telemetry?.players?.max_count ?? server.max_players ?? '—';
@@ -301,11 +300,14 @@
   }
   $('#glossarySearch')?.addEventListener('input', renderGlossary);
 
-  function lineTime() { return new Date().toLocaleTimeString('pt-BR', { hour12: false }); }
-  function appendTerminal(text, type = 'result', marker = '·') {
+  function lineTime(timestamp) {
+    const date = timestamp ? new Date(timestamp) : new Date();
+    return (Number.isNaN(date.getTime()) ? new Date() : date).toLocaleTimeString('pt-BR', { hour12: false });
+  }
+  function appendTerminal(text, type = 'result', marker = '·', timestamp = null) {
     const output = $('#terminalOutput');
     const line = document.createElement('div'); line.className = `terminal-line ${type}`;
-    const time = document.createElement('span'); time.className = 'line-time'; time.textContent = lineTime();
+    const time = document.createElement('span'); time.className = 'line-time'; time.textContent = lineTime(timestamp);
     const bullet = document.createElement('span'); bullet.className = 'line-marker'; bullet.textContent = marker;
     const value = document.createElement('span'); value.textContent = String(text);
     line.append(time, bullet, value); output.append(line); output.scrollTop = output.scrollHeight;
@@ -530,34 +532,13 @@
   $('#historyMore')?.addEventListener('click', () => loadHistory(false));
   $('#historySearch')?.addEventListener('input', renderHistory);
 
-  function renderPlayerEvents() {
-    const list = $('#activityList');
-    if (!list) return;
-    const selected = $('#activityPlayer').value;
-    const records = activityRecords.filter(event => !selected || event.player === selected).slice().reverse();
-    list.replaceChildren();
-    if (!records.length) {
-      const empty = document.createElement('div'); empty.className = 'empty-state';
-      empty.textContent = activityRecords.length ? 'Nenhum evento para este jogador no período.' : 'Nenhuma atividade recente. Eventos novos aparecem aqui automaticamente.';
-      list.append(empty); return;
-    }
-    records.forEach(event => {
-      const card = document.createElement('article'); card.className = `activity-item ${event.type}`;
-      const icon = document.createElement('span'); icon.className = 'activity-icon';
-      icon.textContent = event.type === 'join' ? '↗' : event.type === 'leave' ? '↙' : '✕';
-      const content = document.createElement('div'); content.className = 'activity-content';
-      const title = document.createElement('div'); title.className = 'activity-title';
-      const player = document.createElement('strong'); player.textContent = event.player || 'Jogador';
-      const verb = document.createElement('span'); verb.textContent = event.type === 'join' ? ' entrou no servidor' : event.type === 'leave' ? ' saiu do servidor' : ' morreu';
-      title.append(player, verb); content.append(title);
-      if (event.type === 'death' && event.detail) {
-        const detail = document.createElement('div'); detail.className = 'activity-detail'; detail.textContent = event.detail; content.append(detail);
-      }
-      const time = document.createElement('time'); time.className = 'activity-time';
-      const date = new Date(event.timestamp);
-      if (!Number.isNaN(date.getTime())) { time.dateTime = date.toISOString(); time.textContent = date.toLocaleString('pt-BR'); }
-      card.append(icon, content, time); list.append(card);
-    });
+  function appendPlayerEvent(event) {
+    const player = event.player || 'Jogador';
+    const labels = { join: 'entrou no servidor', leave: 'saiu do servidor', death: 'morreu' };
+    const markers = { join: '↗', leave: '↙', death: '✕' };
+    if (!Object.hasOwn(labels, event.type)) return;
+    const detail = event.type === 'death' && event.detail ? ` — ${event.detail}` : '';
+    appendTerminal(`${player} ${labels[event.type]}${detail}`, `player-event ${event.type}`, markers[event.type], event.timestamp);
   }
 
   async function loadPlayerEvents(reset = false) {
@@ -565,33 +546,21 @@
     if (activityLoading === requestedInstance) return;
     activityLoading = requestedInstance;
     try {
-      const query = `after=${reset ? 0 : activityCursor}&limit=100`;
+      const query = `after=${reset ? 0 : activityCursor}&limit=${reset ? 20 : 100}`;
       const payload = await api('events', { query });
       if (requestedInstance !== activeInstance) return;
       const incoming = Array.isArray(payload.events) ? payload.events : [];
-      if (reset) { activityRecords = incoming; activityCursor = 0; }
-      else if (incoming.length) {
-        const known = new Set(activityRecords.map(event => Number(event.id)));
-        activityRecords.push(...incoming.filter(event => !known.has(Number(event.id))));
-      }
-      if (incoming.length) activityCursor = Math.max(activityCursor, ...incoming.map(event => Number(event.id) || 0));
-      activityRecords = activityRecords.slice(-500);
-      const select = $('#activityPlayer');
-      const selected = select.value;
-      const names = [...new Set(activityRecords.map(event => event.player).filter(Boolean))].sort((a, b) => a.localeCompare(b));
-      select.replaceChildren(new Option('Todos os jogadores', ''));
-      names.forEach(name => select.add(new Option(name, name)));
-      select.value = names.includes(selected) ? selected : '';
-      $('#activityUpdated').textContent = `Atualizado às ${new Date().toLocaleTimeString('pt-BR')}`;
-      renderPlayerEvents();
+      if (reset) activityCursor = 0;
+      incoming.filter(event => Number(event.id) > activityCursor).forEach(event => {
+        appendPlayerEvent(event);
+        activityCursor = Number(event.id);
+      });
     } catch (error) {
       if (requestedInstance !== activeInstance) return;
-      if (error.status !== 401) $('#activityUpdated').textContent = `Falha ao atualizar: ${error.message}`;
+      if (error.status !== 401 && reset) appendTerminal(`Eventos de jogadores indisponíveis: ${error.message}`, 'warning', '!');
       if (error.status === 401) window.location.reload();
     } finally { if (activityLoading === requestedInstance) activityLoading = false; }
   }
-  $('#activityPlayer')?.addEventListener('change', renderPlayerEvents);
-  $('#activityRefresh')?.addEventListener('click', () => loadPlayerEvents(activityRecords.length === 0));
 
   function formatDuration(seconds) {
     const value = Math.max(0, Number(seconds) || 0);
@@ -668,7 +637,7 @@
 
   async function initializeConsole() {
     await loadInstancePicker();
-    await Promise.all([loadCatalog(), refreshStatus(), loadHistory(true)]);
+    await Promise.all([loadCatalog(), refreshStatus(), loadHistory(true), loadPlayerEvents(true)]);
     if (pollTimer) window.clearInterval(pollTimer);
     if (activityPollTimer) window.clearInterval(activityPollTimer);
     pollTimer = window.setInterval(() => {
@@ -676,7 +645,7 @@
       if ($('#view-stats')?.classList.contains('active')) loadPlayerStats();
     }, 15000);
     activityPollTimer = window.setInterval(() => {
-      if ($('#view-activity')?.classList.contains('active')) loadPlayerEvents(activityRecords.length === 0);
+      loadPlayerEvents(activityCursor === 0);
     }, 5000);
   }
 
@@ -700,18 +669,18 @@
         activeInstance = picker.value;
         sessionStorage.setItem('minedev-instance', activeInstance);
         lastTelemetry = null;
-        activityRecords = []; activityCursor = 0;
+        activityCursor = 0;
         playerStats = [];
         historyRecords = []; historyCursor = 0;
         $('#terminalOutput')?.replaceChildren();
         setConnection(false, 'Conectando…');
         $('#worldName').textContent = 'Carregando…';
+        $('#worldPort').textContent = 'UDP —';
         $('#mobileServerName').textContent = 'Carregando…';
         $('#connectionHint').textContent = `Consultando ${picker.selectedOptions[0]?.textContent || activeInstance}…`;
-        $('#activityList')?.replaceChildren();
         renderPlayerStats();
         refreshStatus(false);
-        if ($('#view-activity')?.classList.contains('active')) loadPlayerEvents(true);
+        loadPlayerEvents(true);
         if ($('#view-stats')?.classList.contains('active')) loadPlayerStats();
       });
     } catch (error) {

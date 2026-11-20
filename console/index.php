@@ -16,7 +16,7 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
   <meta name="csrf-token" content="<?= htmlspecialchars((string)$_SESSION['csrf'], ENT_QUOTES, 'UTF-8') ?>">
   <meta name="theme-color" content="#10140f">
   <title>MineDev Console</title>
-  <link rel="stylesheet" href="assets/app.css?v=15">
+  <link rel="stylesheet" href="assets/app.css?v=16">
 </head>
 <body class="<?= $isAuthenticated ? 'authenticated' : 'guest' ?>">
   <div class="ambient ambient-one"></div>
@@ -78,7 +78,10 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
         <div class="rail-label">INSTÂNCIA ATIVA</div>
         <div class="server-card">
           <div class="server-card-head"><div class="server-icon">B</div><div><div class="server-title">Servidor Bedrock</div><div class="server-edition">BEDROCK EDITION</div></div><span class="status-dot" id="railStatusDot"></span></div>
-          <div class="server-address"><span class="tiny-label">MUNDO · PORTA</span><span id="worldName">Carregando…</span></div>
+          <div class="server-address">
+            <div class="server-address-row"><span class="tiny-label">MUNDO</span><span id="worldName">Carregando…</span></div>
+            <div class="server-address-row"><span class="tiny-label">PORTA</span><span id="worldPort">UDP —</span></div>
+          </div>
           <div class="server-version-row"><span class="tiny-label">VERSÃO</span><span class="version-value" id="serverVersion">—</span></div>
           <div class="server-player-row"><div><span class="tiny-label">JOGADORES</span><div class="player-total"><strong id="onlineCount">—</strong><span> / <span id="maxCount">—</span></span></div></div><span class="player-orbit"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M8 1.5v13M1.5 8h13M3.4 3.4l9.2 9.2m0-9.2-9.2 9.2"/></svg></span></div>
           <div class="player-list" id="playerList"><span class="muted">Aguardando telemetria</span></div>
@@ -106,7 +109,6 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
 
         <nav class="tabs" aria-label="Seções do console">
           <button class="tab active" data-tab="console" type="button"><span>⌘</span> Console</button>
-          <button class="tab" data-tab="activity" type="button"><span>◉</span> Feed ao vivo</button>
           <button class="tab" data-tab="stats" type="button"><span>▤</span> Estatísticas</button>
           <button class="tab" data-tab="commands" type="button"><span>⌕</span> Comandos & glossário</button>
           <button class="tab" data-tab="history" type="button"><span>◷</span> Histórico <i><?= $LOG_RETENTION_DAYS ?>d</i></button>
@@ -129,12 +131,6 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
             </form>
             <div class="terminal-footer"><span><kbd>↑</kbd><kbd>↓</kbd> navegar no histórico local</span><span id="connectionHint">Configure BEDROCK_API_TOKEN no .env</span></div>
           </div>
-        </section>
-
-        <section class="view" id="view-activity" data-view="activity">
-          <div class="section-intro"><div><div class="eyebrow">EVENTOS DO MUNDO · LIVE</div><h2>Atividade dos jogadores</h2><p>Entradas, saídas e mortes. O feed mantém os eventos recentes por até 7 dias.</p></div><span class="terminal-live"><span class="pulse"></span> ATUALIZAÇÃO AUTOMÁTICA</span></div>
-          <div class="activity-tools"><label class="filter-select-label" for="activityPlayer">Jogador</label><select class="activity-player-select" id="activityPlayer"><option value="">Todos os jogadores</option></select><button class="ghost-button" id="activityRefresh" type="button">Atualizar feed ⟳</button><span class="activity-updated" id="activityUpdated">Aguardando eventos…</span></div>
-          <div class="activity-list" id="activityList" aria-live="polite" aria-label="Feed de atividade dos jogadores"></div>
         </section>
 
         <section class="view" id="view-stats" data-view="stats">
@@ -166,6 +162,6 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
     </div>
   </div>
   <div class="toast-region" id="toastRegion" aria-live="polite"></div>
-  <script src="assets/app.js?v=12" defer></script>
+  <script src="assets/app.js?v=13" defer></script>
 </body>
 </html>
