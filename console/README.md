@@ -91,3 +91,4 @@ Acesse o painel por HTTPS e restrinja a hospedagem à rede local ou à VPN. Mant
 | A tela mostra **Token pendente** | Preencha `BEDROCK_API_TOKEN` com o token do add-on. |
 | O add-on retorna HTTP 401 ou 403 | Confira se os tokens são iguais e se `rcon_allowed_ips` permite o IP de origem do PHP. |
 | O painel mostra **Sem conexão** | A partir do host do PHP, consulte `curl http://192.168.1.50:19233/health` (troque para a porta da instância). O retorno `{"status":"ready"}` indica que a API responde e a sessão Bedrock correspondente está ativa. |
+| Trocar a instância mostra o mesmo mundo ou erro de identidade | Confira `BEDROCK_INSTANCES` no `.env`: cada ID deve apontar à API da sua posição na lista do add-on (`19233`, `19234` etc.). O MineDev bloqueia dados e comandos quando a API responde com outro `instance_id`. |

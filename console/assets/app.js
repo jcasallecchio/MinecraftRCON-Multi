@@ -169,8 +169,10 @@
   }
 
   async function refreshStatus(showToast = false) {
+    const requestedInstance = activeInstance;
     try {
       const state = await api('status');
+      if (requestedInstance !== activeInstance) return;
       lastTelemetry = state.telemetry || null;
       const configured = !!state.configured;
       const server = state.telemetry?.server || {};
@@ -216,6 +218,7 @@
       $('#connectionHint').title = $('#connectionHint').textContent;
       if (showToast) toast(running ? 'Telemetria atualizada.' : label, running ? '' : 'error');
     } catch (error) {
+      if (requestedInstance !== activeInstance) return;
       lastTelemetry = null;
       setConnection(false, error.status === 401 ? 'Sessão expirada' : 'API indisponível');
       $('#commandInput').disabled = true;
@@ -558,11 +561,13 @@
   }
 
   async function loadPlayerEvents(reset = false) {
-    if (activityLoading) return;
-    activityLoading = true;
+    const requestedInstance = activeInstance;
+    if (activityLoading === requestedInstance) return;
+    activityLoading = requestedInstance;
     try {
       const query = `after=${reset ? 0 : activityCursor}&limit=100`;
       const payload = await api('events', { query });
+      if (requestedInstance !== activeInstance) return;
       const incoming = Array.isArray(payload.events) ? payload.events : [];
       if (reset) { activityRecords = incoming; activityCursor = 0; }
       else if (incoming.length) {
@@ -580,9 +585,10 @@
       $('#activityUpdated').textContent = `Atualizado às ${new Date().toLocaleTimeString('pt-BR')}`;
       renderPlayerEvents();
     } catch (error) {
+      if (requestedInstance !== activeInstance) return;
       if (error.status !== 401) $('#activityUpdated').textContent = `Falha ao atualizar: ${error.message}`;
       if (error.status === 401) window.location.reload();
-    } finally { activityLoading = false; }
+    } finally { if (activityLoading === requestedInstance) activityLoading = false; }
   }
   $('#activityPlayer')?.addEventListener('change', renderPlayerEvents);
   $('#activityRefresh')?.addEventListener('click', () => loadPlayerEvents(activityRecords.length === 0));
@@ -642,17 +648,20 @@
   }
 
   async function loadPlayerStats() {
-    if (statsLoading) return;
-    statsLoading = true;
+    const requestedInstance = activeInstance;
+    if (statsLoading === requestedInstance) return;
+    statsLoading = requestedInstance;
     try {
       const payload = await api('player-stats');
+      if (requestedInstance !== activeInstance) return;
       playerStats = Array.isArray(payload.players) ? payload.players : [];
       $('#statsUpdated').textContent = `Atualizado às ${new Date().toLocaleTimeString('pt-BR')}`;
       renderPlayerStats();
     } catch (error) {
+      if (requestedInstance !== activeInstance) return;
       if (error.status !== 401) $('#statsUpdated').textContent = `Falha ao atualizar: ${error.message}`;
       if (error.status === 401) window.location.reload();
-    } finally { statsLoading = false; }
+    } finally { if (statsLoading === requestedInstance) statsLoading = false; }
   }
   $('#statsSearch')?.addEventListener('input', renderPlayerStats);
   $('#statsRefresh')?.addEventListener('click', loadPlayerStats);
@@ -695,6 +704,12 @@
         playerStats = [];
         historyRecords = []; historyCursor = 0;
         $('#terminalOutput')?.replaceChildren();
+        setConnection(false, 'Conectando…');
+        $('#worldName').textContent = 'Carregando…';
+        $('#mobileServerName').textContent = 'Carregando…';
+        $('#connectionHint').textContent = `Consultando ${picker.selectedOptions[0]?.textContent || activeInstance}…`;
+        $('#activityList')?.replaceChildren();
+        renderPlayerStats();
         refreshStatus(false);
         if ($('#view-activity')?.classList.contains('active')) loadPlayerEvents(true);
         if ($('#view-stats')?.classList.contains('active')) loadPlayerStats();

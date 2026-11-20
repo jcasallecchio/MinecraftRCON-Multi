@@ -166,6 +166,6 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
     </div>
   </div>
   <div class="toast-region" id="toastRegion" aria-live="polite"></div>
-  <script src="assets/app.js?v=11" defer></script>
+  <script src="assets/app.js?v=12" defer></script>
 </body>
 </html>

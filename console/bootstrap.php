@@ -260,6 +260,12 @@ function bedrock_request(string $path, string $method = 'GET', ?array $payload =
     if ($instance === null) {
         return ['ok' => false, 'http_status' => 0, 'error' => 'Instância Bedrock inválida ou sem configuração no .env.', 'data' => null];
     }
+    // Verify the destination before reading another world's data or sending a command.
+    // The legacy single-instance configuration has no instance ID to compare.
+    if ($GLOBALS['BEDROCK_INSTANCES_JSON'] !== '' && $path !== '/api/v1/info') {
+        $identity = bedrock_request('/api/v1/info', 'GET', null, $instanceId);
+        if (!$identity['ok']) return $identity;
+    }
     $url = $instance['url'] . $path;
     $parts = parse_url($url);
     if (!is_array($parts) || !in_array(strtolower((string)($parts['scheme'] ?? '')), ['http', 'https'], true) || empty($parts['host'])) {
@@ -294,6 +300,9 @@ function bedrock_request(string $path, string $method = 'GET', ?array $payload =
     }
     if ($httpStatus < 200 || $httpStatus >= 300) {
         return ['ok' => false, 'http_status' => $httpStatus, 'error' => (string)($data['message'] ?? $data['error']['message'] ?? 'A API Bedrock recusou a solicitação.'), 'data' => $data];
+    }
+    if ($GLOBALS['BEDROCK_INSTANCES_JSON'] !== '' && $path === '/api/v1/info' && ($data['instance_id'] ?? null) !== $instanceId) {
+        return ['ok' => false, 'http_status' => 0, 'error' => "A instância {$instanceId} aponta para a API de " . (string)($data['instance_id'] ?? 'outra instância') . '. Corrija a URL em BEDROCK_INSTANCES no .env.', 'data' => null];
     }
     return ['ok' => true, 'http_status' => $httpStatus, 'error' => null, 'data' => $data];
 }
