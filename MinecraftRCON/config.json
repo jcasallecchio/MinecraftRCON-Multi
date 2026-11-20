@@ -1,6 +1,6 @@
 {
   "name": "MinecraftRCON Multi",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "slug": "minecraft_rcon_multi",
   "description": "Gerenciador de até cinco servidores Minecraft Bedrock simultâneos com RCON",
   "startup": "services",
@@ -69,6 +69,7 @@
     "rcon_allowed_ips": "str?",
     "allow_list": "bool",
     "emit_server_telemetry": "bool",
+    "public_hostname": "str?",
     "backup_interval_hours": "int?",
     "backup_keep_count": "int?",
     "instances": [
@@ -83,6 +84,7 @@
   "options": {
     "allow_list": false,
     "emit_server_telemetry": true,
+    "public_hostname": "",
     "instances": []
   }
 }

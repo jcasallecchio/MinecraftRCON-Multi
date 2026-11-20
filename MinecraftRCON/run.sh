@@ -8,7 +8,9 @@ mkdir -p "$INSTANCE_ROOT"
 
 if ! python3 - "$OPTIONS_FILE" <<'PY' > /tmp/minecraft-instances.tsv
 import json
+import ipaddress
 import re
+import socket
 import sys
 
 try:
@@ -44,6 +46,20 @@ emit_telemetry = options.get("emit_server_telemetry", True)
 if not isinstance(allow_list, bool) or not isinstance(emit_telemetry, bool):
     raise SystemExit("[manager] allow_list e emit_server_telemetry precisam ser opções booleanas.")
 
+public_hostname = options.get("public_hostname") or ""
+if not isinstance(public_hostname, str) or (public_hostname and not re.fullmatch(r"[A-Za-z0-9.-]{1,253}", public_hostname)):
+    raise SystemExit("[manager] public_hostname deve ser um hostname ou IPv4 sem http:// e sem porta.")
+public_ip = "-"
+if public_hostname:
+    try:
+        resolved = socket.gethostbyname(public_hostname)
+        if not ipaddress.IPv4Address(resolved).is_global:
+            raise ValueError(f"{resolved} não é um IPv4 público")
+        public_ip = resolved
+        print(f"[manager] Endereço UDP público anunciado: {public_hostname} -> {public_ip}", file=sys.stderr)
+    except (OSError, ValueError) as exc:
+        print(f"[manager] Não foi possível resolver public_hostname ({exc}); os mundos iniciarão sem anúncio explícito do IPv4 público.", file=sys.stderr)
+
 seen_ids, seen_ports = set(), set()
 for index, item in enumerate(instances):
     if not isinstance(item, dict):
@@ -67,7 +83,7 @@ for index, item in enumerate(instances):
         raise SystemExit(f"[manager] A faixa de portas {port}-{port + 1} conflita com outra instância ou com uma API TCP.")
     seen_ids.add(instance_id)
     seen_ports.update((port, port + 1))
-    print("\t".join((instance_id, name.strip(), world_name.strip(), str(port), str(19233 + index), str(allow_list).lower(), str(emit_telemetry).lower())))
+    print("\t".join((instance_id, name.strip(), world_name.strip(), str(port), str(19233 + index), str(allow_list).lower(), str(emit_telemetry).lower(), public_ip)))
 PY
 then
   log "Configuração inválida. Revise a lista de instâncias nas opções do add-on."
@@ -82,7 +98,7 @@ shutdown() {
 }
 trap 'shutdown; exit 0' TERM INT
 
-while IFS=$'\t' read -r instance_id display_name world_name udp_port api_port allow_list emit_telemetry; do
+while IFS=$'\t' read -r instance_id display_name world_name udp_port api_port allow_list emit_telemetry public_ip; do
   [[ -n "$instance_id" ]] || continue
   instance_dir="$INSTANCE_ROOT/$instance_id"
   mkdir -p "$instance_dir"
@@ -95,6 +111,7 @@ while IFS=$'\t' read -r instance_id display_name world_name udp_port api_port al
   BEDROCK_WORLD_NAME="$world_name" \
   BEDROCK_ALLOW_LIST="$allow_list" \
   BEDROCK_EMIT_SERVER_TELEMETRY="$emit_telemetry" \
+  BEDROCK_PUBLIC_IP="$public_ip" \
   RCON_PORT="$api_port" \
     /instance.sh &
   INSTANCE_PIDS+=("$!")

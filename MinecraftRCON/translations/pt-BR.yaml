@@ -11,6 +11,9 @@ configuration:
   emit_server_telemetry:
     name: Enviar telemetria do servidor Bedrock
     description: Envia telemetria opcional do servidor à Mojang/Microsoft. O MineDev continua usando sua telemetria local com esta opção desligada.
+  public_hostname:
+    name: Hostname público dos mundos
+    description: Opcional. Informe o DuckDNS ou outro DNS público sem http:// e sem porta. O add-on resolve o IPv4 ao iniciar e o anuncia no UDP NetherNet de cada mundo.
   backup_interval_hours:
     name: Intervalo de backup (horas)
   backup_keep_count:

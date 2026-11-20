@@ -1,5 +1,11 @@
 # Histórico de versões
 
+## 0.3.2 — Detecta conflito com outros serviços na porta do jogo
+- Verifica se TCP e UDP da instância estão disponíveis antes de iniciar o Bedrock.
+- Só declara o servidor pronto após o Bedrock confirmar a abertura da porta e concluir a inicialização.
+- Documenta o conflito entre instâncias e proxies ou outros serviços no mesmo host.
+- Permite anunciar o IPv4 público resolvido de um hostname DNS no mapeamento UDP de todas as instâncias.
+
 ## 0.3.1 — Corrige portas de jogo no NetherNet
 - Configura `server-udp-ports` com a porta de cada instância, evitando que mundos secundários enviem o tráfego UDP para a porta da primeira instância.
 - Atualiza o formulário e a documentação para explicar o uso de TCP e UDP na mesma porta configurada.

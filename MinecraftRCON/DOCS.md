@@ -45,7 +45,11 @@ Para criar outra, adicione uma nova entrada no formulário e preencha, por exemp
 
 Use uma porta de conexão distinta para cada instância. Com NetherNet, o add-on configura o número tanto para a sinalização TCP (`server-port`) quanto para o tráfego UDP do jogo (`server-udp-ports`). A antiga porta IPv6 seguinte não é usada pelo NetherNet. Os exemplos padrão são `19132`, `19134`, `19136`, `19138` e `19140`. A API RCON usa TCP `19233` para o primeiro item da lista, `19234` para o segundo e assim por diante, até `19237`.
 
+Para acesso externo atrás de NAT, preencha **Hostname público dos mundos** com o seu DuckDNS ou outro DNS público, sem `http://` e sem porta. O add-on resolve o IPv4 ao iniciar e anuncia `IPv4:porta:porta` em `server-udp-ports` de cada instância. Reinicie o add-on se o IP público mudar. O campo é opcional para uso somente local.
+
 Não configure portas de conexão repetidas. O add-on valida IDs, nomes, quantidade e colisões de portas antes de iniciar. A ordem da lista define a porta TCP RCON; mantenha a ordem sincronizada com o `.env` do MineDev. Depois de alterar a lista, salve e reinicie o add-on. IDs definem as pastas persistentes dos mundos; mantenha-os estáveis.
+
+Se houver um proxy HTTPS, outro add-on ou qualquer serviço no mesmo host usando a porta TCP ou UDP escolhida, libere essa porta ou selecione outra antes de iniciar o mundo. Com NetherNet, o Bedrock pode registrar `Server started` mesmo sem conseguir abrir a porta de sinalização; o add-on verifica a disponibilidade e exige a confirmação `Accepting clients on` para declarar a instância pronta.
 
 Se você instalou a versão `0.1.0`, converta cada objeto que estava em `instances_json` em um item da lista visual. Preserve `id`, `name`, `world_name` e `udp_port`; o código ainda lê a opção antiga se a nova lista não tiver sido criada.
 

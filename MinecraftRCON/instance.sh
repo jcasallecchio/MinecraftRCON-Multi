@@ -404,7 +404,7 @@ PY
 fi
 
 # --- Inicia servidor ---
-transport_result=$(python3 - "$SERVER_DIR/server.properties" "$BEDROCK_PORT" "$BEDROCK_IPV6_PORT" "$BEDROCK_WORLD_NAME" "${BEDROCK_ALLOW_LIST:-false}" "${BEDROCK_EMIT_SERVER_TELEMETRY:-true}" <<'PY'
+transport_result=$(python3 - "$SERVER_DIR/server.properties" "$BEDROCK_PORT" "$BEDROCK_IPV6_PORT" "$BEDROCK_WORLD_NAME" "${BEDROCK_ALLOW_LIST:-false}" "${BEDROCK_EMIT_SERVER_TELEMETRY:-true}" "${BEDROCK_PUBLIC_IP:--}" <<'PY'
 import os
 import stat
 import sys
@@ -415,7 +415,7 @@ settings = {
     "transport": "nethernet",
     "server-port": sys.argv[2],
     "server-portv6": sys.argv[3],
-    "server-udp-ports": sys.argv[2],
+    "server-udp-ports": f"{sys.argv[7]}:{sys.argv[2]}:{sys.argv[2]}" if sys.argv[7] != "-" else sys.argv[2],
     "enable-lan-visibility": "false",
     "allow-list": sys.argv[5],
     "emit-server-telemetry": sys.argv[6],
@@ -464,6 +464,30 @@ PY
 log $YELLOW "$transport_result"
 cd "$SERVER_DIR"
 
+# A host-network proxy or another service can occupy the signaling port while
+# Bedrock still prints "Server started.". Fail before claiming the instance is
+# ready so the real port conflict is visible in the add-on log.
+if ! python3 - "$BEDROCK_PORT" <<'PY'
+import socket
+import sys
+
+port = int(sys.argv[1])
+for family, address in ((socket.AF_INET6, "::"), (socket.AF_INET, "0.0.0.0")):
+    for kind, label in ((socket.SOCK_STREAM, "TCP"), (socket.SOCK_DGRAM, "UDP")):
+        try:
+            with socket.socket(family, kind) as probe:
+                if family == socket.AF_INET6:
+                    probe.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 1)
+                probe.bind((address, port))
+        except OSError as error:
+            print(f"Porta {label} {port} indisponível em {address}: {error}", file=sys.stderr)
+            sys.exit(1)
+PY
+then
+  log $RED "A porta do jogo está ocupada ou indisponível. Libere-a antes de iniciar esta instância."
+  exit 1
+fi
+
 server_session_exists() {
   screen -ls | grep -Eq "^[[:space:]]*[0-9]+\\.${SCREEN_SESSION}[[:space:]]+\\("
 }
@@ -480,7 +504,7 @@ rotate_server_log() {
 }
 
 start_and_wait_server() {
-  local old_line_count attempt server_ready=false
+  local old_line_count attempt server_ready=false startup_log
   rotate_server_log
   touch "$SERVER_DIR/server.log"
   old_line_count=$(wc -l < "$SERVER_DIR/server.log" 2>/dev/null || printf '0')
@@ -494,7 +518,8 @@ start_and_wait_server() {
       tail -n 40 "$SERVER_DIR/server.log" || true
       return 1
     fi
-    if tail -n +$((old_line_count + 1)) "$SERVER_DIR/server.log" | grep -Fq "Server started."; then
+    startup_log=$(tail -n +$((old_line_count + 1)) "$SERVER_DIR/server.log")
+    if grep -Fq "Server started." <<< "$startup_log" && grep -Fq "Accepting clients on" <<< "$startup_log"; then
       server_ready=true
       break
     fi
@@ -502,7 +527,7 @@ start_and_wait_server() {
   done
 
   if [[ "$server_ready" != true ]]; then
-    log $RED "O servidor Minecraft não confirmou que está pronto após 60 segundos."
+    log $RED "O servidor Minecraft não confirmou a abertura da porta e a inicialização após 60 segundos."
     tail -n 40 "$SERVER_DIR/server.log" || true
     return 1
   fi

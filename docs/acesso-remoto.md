@@ -31,6 +31,8 @@ Para permitir mais de uma instância, encaminhe TCP e UDP para a porta configura
 
 Ao criar uma regra, selecione TCP e UDP (ou crie duas regras com as mesmas portas). O add-on configura `server-udp-ports` automaticamente para acompanhar `udp_port`; não edite essa propriedade manualmente. Se o NAT exigir portas externas diferentes das internas, configure o mapeamento publicado pelo NetherNet conforme a documentação oficial do BDS.
 
+Preencha **Hostname público dos mundos** nas opções do add-on com o nome DuckDNS ou outro DNS que resolva para o IPv4 WAN do roteador. Ao reiniciar, o add-on anuncia esse IPv4 nos candidatos UDP do NetherNet. Se o IP WAN mudar, atualize o DNS e reinicie o add-on para resolver o novo endereço.
+
 Não encaminhe as APIs de gerenciamento TCP `19233–19237`. Restrinja-as à rede local ou VPN e use `rcon_allowed_ips` como filtro adicional.
 
 ## DuckDNS
@@ -60,7 +62,7 @@ DuckDNS e Cloudflare DNS podem coexistir; cada nome precisa apontar ao IP públi
 | --- | --- |
 | Nome resolve para IP antigo | Confira o registro A e o atualizador DuckDNS/Cloudflare. |
 | Funciona na rede local, não no 4G/5G | Revise IPv4 público, CGNAT, encaminhamento TCP/UDP, firewall e configuração de dados móveis do Minecraft. |
-| A instância não inicia após escolher outra porta | Verifique se as portas de conexão das instâncias são distintas e se o host não usa essas portas em outro serviço. |
+| A instância não inicia após escolher outra porta | Verifique se as portas de conexão das instâncias são distintas e se um proxy HTTPS ou outro serviço no host ocupa a porta TCP/UDP escolhida. |
 | O mundo certo não abre | Confira ID, `world_name`, nome da pasta dentro de `worlds/` e versão Bedrock do cliente. |
 
 O nome de menus e os campos variam por roteador. Para o encaminhamento, informe protocolo, porta externa, endereço local do Home Assistant e porta/faixa interna. Preserve regras existentes de outros serviços.
