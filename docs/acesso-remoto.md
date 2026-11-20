@@ -10,34 +10,28 @@ Este guia trata somente das portas de jogo. Primeiro confirme que cada instânci
 
 ## Portas por instância
 
-Para cada item configurado, o `udp_port` identifica a porta de entrada do jogo. A porta seguinte (`udp_port + 1`) é reservada pelo add-on para o servidor IPv6. O cliente Bedrock também inicia a sinalização no `server-port` TCP e negocia o tráfego do jogo em UDP.
+Para cada item configurado, o campo `udp_port` identifica a porta do mundo. Com NetherNet, o add-on usa esse número tanto para a sinalização TCP (`server-port`) quanto para o tráfego UDP do jogo (`server-udp-ports`). A antiga configuração `server-portv6` não é necessária para o NetherNet.
 
 O add-on não cria regras no roteador. Faça o encaminhamento manual, sempre para o IP local fixo do Home Assistant. Exemplo para uma instância na porta 19132:
 
 | Protocolo | Porta externa | Destino | Porta interna |
 | --- | ---: | --- | ---: |
 | TCP | 19132 | IP local do Home Assistant | 19132 |
-| UDP | Faixa de jogo configurada | IP local do Home Assistant | Mesma faixa, mapeamento um a um |
+| UDP | 19132 | IP local do Home Assistant | 19132 |
 
-Para permitir mais de uma instância, encaminhe a porta TCP de jogo de cada uma. Defina também uma faixa UDP distinta por instância em seu próprio `server.properties`, na chave `server-udp-ports`, e encaminhe essa faixa para o mesmo intervalo interno. Uma divisão possível é:
+Para permitir mais de uma instância, encaminhe TCP e UDP para a porta configurada em cada mundo. Exemplo com as portas padrão:
 
-| Instância | TCP de entrada | Faixa UDP de exemplo |
+| Instância | TCP de entrada | UDP de entrada |
 | ---: | ---: | ---: |
-| 1 | 19132 | 19140–19155 |
-| 2 | 19134 | 19156–19171 |
-| 3 | 19136 | 19172–19187 |
-| 4 | 19138 | 19188–19203 |
-| 5 | 19140 | 19204–19219 |
+| 1 | 19132 | 19132 |
+| 2 | 19134 | 19134 |
+| 3 | 19136 | 19136 |
+| 4 | 19138 | 19138 |
+| 5 | 19140 | 19140 |
 
-Com a instância parada, edite `/share/minecraftRCON-Multi/instances/<id>/server.properties` e reinicie o add-on. Um formato fixo aceito pelo servidor é `server-udp-ports=<início>-<fim>:<início>-<fim>`. Por exemplo, para a primeira faixa:
+Ao criar uma regra, selecione TCP e UDP (ou crie duas regras com as mesmas portas). O add-on configura `server-udp-ports` automaticamente para acompanhar `udp_port`; não edite essa propriedade manualmente. Se o NAT exigir portas externas diferentes das internas, configure o mapeamento publicado pelo NetherNet conforme a documentação oficial do BDS.
 
-~~~properties
-server-udp-ports=19140-19155:19140-19155
-~~~
-
-Não copie esse exemplo sem reservar as faixas para as demais instâncias. Se sua conexão exige um IP público anunciado no arquivo, use o formato oficial `IP_PUBLICO:FAIXA_EXTERNA:FAIXA_INTERNA` e atualize esse IP quando ele mudar. Não use o hostname DuckDNS nesse campo. Revise o manual do roteador: uma faixa precisa manter o mapeamento externo→interno porta a porta.
-
-Não encaminhe as APIs de gerenciamento TCP `19133–19137`. Restrinja-as à rede local ou VPN e use `rcon_allowed_ips` como filtro adicional.
+Não encaminhe as APIs de gerenciamento TCP `19233–19237`. Restrinja-as à rede local ou VPN e use `rcon_allowed_ips` como filtro adicional.
 
 ## DuckDNS
 
@@ -58,15 +52,15 @@ DuckDNS e Cloudflare DNS podem coexistir; cada nome precisa apontar ao IP públi
 1. Em outro acesso à internet, desligue o Wi-Fi do celular e use 4G/5G.
 2. No Minecraft, adicione o hostname como endereço e a porta TCP de jogo configurada como porta. Não inclua esquema HTTP.
 3. Confirme a entrada no mundo e procure a entrada do jogador nos logs/eventos da instância.
-4. Se o servidor aparecer na lista, mas a entrada falhar, verifique a faixa UDP e o endereço anunciado. Uma resposta HTTP na porta TCP não comprova que o UDP funciona.
+4. Se o servidor aparecer na lista, mas a entrada falhar, verifique o encaminhamento UDP e o endereço anunciado. Uma resposta HTTP na porta TCP não comprova que o UDP funciona.
 
 ## Diagnóstico rápido
 
 | Sintoma | Verificação |
 | --- | --- |
 | Nome resolve para IP antigo | Confira o registro A e o atualizador DuckDNS/Cloudflare. |
-| Funciona na rede local, não no 4G/5G | Revise IPv4 público, CGNAT, encaminhamento TCP, faixa UDP, firewall e configuração de dados móveis do Minecraft. |
-| A instância não inicia após escolher outra porta | Verifique se os pares UDP não se sobrepõem e se o host não usa essas portas em outro serviço. |
+| Funciona na rede local, não no 4G/5G | Revise IPv4 público, CGNAT, encaminhamento TCP/UDP, firewall e configuração de dados móveis do Minecraft. |
+| A instância não inicia após escolher outra porta | Verifique se as portas de conexão das instâncias são distintas e se o host não usa essas portas em outro serviço. |
 | O mundo certo não abre | Confira ID, `world_name`, nome da pasta dentro de `worlds/` e versão Bedrock do cliente. |
 
 O nome de menus e os campos variam por roteador. Para o encaminhamento, informe protocolo, porta externa, endereço local do Home Assistant e porta/faixa interna. Preserve regras existentes de outros serviços.

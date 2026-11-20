@@ -13,7 +13,7 @@
 ## Recursos
 
 - **Até cinco servidores Bedrock ativos ao mesmo tempo.** Cada instância tem mundo, propriedades, logs, backups, feed, estatísticas e sessão de processo próprios.
-- **Portas independentes.** Cada instância recebe um par UDP para IPv4/IPv6 e uma porta TCP de API RCON. A porta de jogo é configurável.
+- **Portas independentes.** Cada instância usa a porta configurada para sinalização TCP e tráfego UDP NetherNet, além de uma porta TCP própria para a API RCON.
 - **Atualização automática do Bedrock.** Cada instância consulta a distribuição oficial na inicialização e preserva seu mundo e arquivos próprios durante atualizações.
 - **MineDev Console multi-instância.** Selecione um servidor para ver telemetria, feed e estatísticas; envie comandos e inicie, pare ou reinicie o servidor selecionado.
 - **Backups e restauração por mundo.** Agendamento, retenção e operação autenticada são separados por instância.
@@ -24,7 +24,7 @@
 1. No Home Assistant OS, abra **Configurações → Aplicativos (ou Add-ons) → Instalar aplicativo → ⋮ → Repositórios**.
 2. Adicione `https://github.com/jcasallecchio/MinecraftRCON-Multi` ou use o botão acima.
 3. Instale **MinecraftRCON Multi**, adicione pelo menos um mundo em **Mundos/instâncias** e defina `rcon_token` com pelo menos 32 caracteres.
-4. Salve, inicie o add-on e confira os logs. No Minecraft, conecte ao IP do Home Assistant e à porta UDP configurada para o mundo.
+4. Salve, inicie o add-on e confira os logs. No Minecraft, conecte ao IP do Home Assistant e à porta configurada para o mundo.
 
 Veja [configuração, portas e migração](MinecraftRCON/DOCS.md), [acesso remoto com DuckDNS ou DNS](docs/acesso-remoto.md) e [instalação do MineDev](console/README.md).
 
@@ -39,7 +39,7 @@ O MineDev é um painel PHP opcional. Guarde URLs e tokens das instâncias no `.e
 | Guia | Conteúdo |
 | --- | --- |
 | [Add-on, configuração e migração](MinecraftRCON/DOCS.md) | Formulário de instâncias, diretórios, portas, backups, API, recursos e migração de um mundo existente |
-| [Acesso externo](docs/acesso-remoto.md) | Encaminhamento UDP, DuckDNS e DNS-only na Cloudflare |
+| [Acesso externo](docs/acesso-remoto.md) | Encaminhamento TCP/UDP, DuckDNS e DNS-only na Cloudflare |
 | [MineDev Console](console/README.md) | Instalação, login, `.env`, associação das APIs e uso do seletor |
 | [Histórico](MinecraftRCON/CHANGELOG.md) | Alterações desta linha multi-instância |
 

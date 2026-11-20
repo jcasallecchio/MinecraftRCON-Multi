@@ -28,5 +28,5 @@ configuration:
         name: Nome da pasta do mundo
         description: Para importar um mundo existente, deve corresponder exatamente à pasta dentro de worlds.
       udp_port:
-        name: Porta UDP do jogo
-        description: Porta de entrada do jogador. A porta seguinte fica reservada para a configuração IPv6.
+        name: Porta do jogo
+        description: Porta usada para sinalização TCP e tráfego UDP do NetherNet. Encaminhe TCP e UDP nessa mesma porta no roteador.

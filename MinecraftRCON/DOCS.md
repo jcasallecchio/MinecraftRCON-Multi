@@ -16,7 +16,7 @@ Este add-on gerencia de uma a cinco instâncias Bedrock simultâneas. Cada mundo
 3. Na configuração do add-on, defina `rcon_token` com um segredo aleatório de pelo menos 32 caracteres. Guarde-o em um gerenciador de senhas.
 4. Em **Mundos/instâncias**, configure de 1 a 5 entradas usando os campos do formulário. A lista começa vazia; para adicionar um mundo, use a ação de adicionar item. Não é necessário escrever JSON.
 5. Confira os logs. Na primeira inicialização, cada mundo baixa sua cópia do servidor Bedrock. Aguarde a mensagem de servidor pronto para cada instância.
-6. Adicione manualmente no Minecraft o IP local do Home Assistant e a porta UDP de jogo da instância.
+6. Adicione manualmente no Minecraft o IP local do Home Assistant e a porta de conexão da instância.
 
 ## Configurar instâncias
 
@@ -27,7 +27,7 @@ Na aba de configuração do add-on, edite a lista **Mundos/instâncias**. Cada i
 | `id` | Sim | Identificador exclusivo: letras minúsculas, números, `_` ou `-`, até 32 caracteres. Também define a pasta da instância. |
 | `name` | Sim | Nome amigável mostrado nos logs e no MineDev. |
 | `world_name` | Sim | Valor `level-name` do mundo Bedrock. Para usar um mundo já copiado, deve corresponder ao nome da pasta em `worlds/`. |
-| `udp_port` | Sim | Porta UDP IPv4 do servidor, entre 1024 e 65533. A próxima porta é reservada para `server-portv6`. |
+| `udp_port` | Sim | Porta de conexão do mundo, entre 1024 e 65533. O add-on usa esse número para sinalização TCP e tráfego UDP do NetherNet. |
 
 O formulário começa com uma instância de exemplo:
 
@@ -43,9 +43,9 @@ Para criar outra, adicione uma nova entrada no formulário e preencha, por exemp
 - Nome da pasta do mundo: `Criativo`
 - Porta UDP: `19134`
 
-Use portas UDP distintas sem sobreposição: cada instância usa `udp_port` para IPv4 e `udp_port + 1` para IPv6. Os exemplos reservam os pares `19132–19133`, `19134–19135`, `19136–19137`, `19138–19139` e `19140–19141`. A API RCON usa TCP `19233` para o primeiro item da lista, `19234` para o segundo e assim por diante, até `19237`.
+Use uma porta de conexão distinta para cada instância. Com NetherNet, o add-on configura o número tanto para a sinalização TCP (`server-port`) quanto para o tráfego UDP do jogo (`server-udp-ports`). A antiga porta IPv6 seguinte não é usada pelo NetherNet. Os exemplos padrão são `19132`, `19134`, `19136`, `19138` e `19140`. A API RCON usa TCP `19233` para o primeiro item da lista, `19234` para o segundo e assim por diante, até `19237`.
 
-Não configure pares UDP que se sobreponham. O add-on valida IDs, nomes, quantidade e colisões de portas antes de iniciar. A ordem da lista define a porta TCP RCON; mantenha a ordem sincronizada com o `.env` do MineDev. Depois de alterar a lista, salve e reinicie o add-on. IDs definem as pastas persistentes dos mundos; mantenha-os estáveis.
+Não configure portas de conexão repetidas. O add-on valida IDs, nomes, quantidade e colisões de portas antes de iniciar. A ordem da lista define a porta TCP RCON; mantenha a ordem sincronizada com o `.env` do MineDev. Depois de alterar a lista, salve e reinicie o add-on. IDs definem as pastas persistentes dos mundos; mantenha-os estáveis.
 
 Se você instalou a versão `0.1.0`, converta cada objeto que estava em `instances_json` em um item da lista visual. Preserve `id`, `name`, `world_name` e `udp_port`; o código ainda lê a opção antiga se a nova lista não tiver sido criada.
 
@@ -84,13 +84,13 @@ Você pode copiar também `permissions.json`, `allowlist.json`, `structures/`, `
 
 ## Portas e API RCON
 
-| Instância na lista | Jogo IPv4 | Reserva IPv6 | API HTTP RCON |
-| ---: | ---: | ---: | ---: |
-| 1 | UDP `udp_port` (padrão 19132) | UDP `udp_port + 1` (19133) | TCP `19233` |
-| 2 | UDP `udp_port` (exemplo 19134) | UDP `udp_port + 1` (19135) | TCP `19234` |
-| 3 | UDP `udp_port` (exemplo 19136) | UDP `udp_port + 1` (19137) | TCP `19235` |
-| 4 | UDP `udp_port` (exemplo 19138) | UDP `udp_port + 1` (19139) | TCP `19236` |
-| 5 | UDP `udp_port` (exemplo 19140) | UDP `udp_port + 1` (19141) | TCP `19237` |
+| Instância na lista | Jogo TCP e UDP | API HTTP RCON |
+| ---: | ---: | ---: |
+| 1 | `udp_port` (padrão 19132) | TCP `19233` |
+| 2 | `udp_port` (exemplo 19134) | TCP `19234` |
+| 3 | `udp_port` (exemplo 19136) | TCP `19235` |
+| 4 | `udp_port` (exemplo 19138) | TCP `19236` |
+| 5 | `udp_port` (exemplo 19140) | TCP `19237` |
 
 As APIs usam `19233–19237/TCP` para não disputar portas de jogo. **Não encaminhe nenhuma porta TCP da API RCON para a internet.** Restrinja o acesso à rede de confiança ou a uma VPN e, se necessário, informe os IPs em `rcon_allowed_ips` separados por vírgulas.
 
@@ -115,9 +115,9 @@ Veja [console/README.md](../console/README.md) para instalar o painel e configur
 
 ## Acesso pela internet
 
-Primeiro conecte todos os mundos pela rede local. Para permitir acesso externo, encaminhe somente as portas UDP de jogo desejadas no roteador e a porta para o IP local reservado do Home Assistant. Configure DDNS em DuckDNS ou DNS convencional. A Cloudflare Proxy HTTP não transporta o tráfego do jogo Bedrock; deixe o registro DNS como **DNS only** ou use uma solução específica de proxy UDP.
+Primeiro conecte todos os mundos pela rede local. Para permitir acesso externo, encaminhe TCP e UDP da porta de jogo desejada no roteador para o IP local reservado do Home Assistant. Configure DDNS em DuckDNS ou DNS convencional. A Cloudflare Proxy HTTP não transporta o tráfego do jogo Bedrock; deixe o registro DNS como **DNS only** ou use uma solução específica de proxy UDP.
 
-Exemplo: se a instância `creative` usa UDP 19134, o jogador entra pelo hostname `meu-servidor.example` e porta 19134. Consulte o [guia externo](../docs/acesso-remoto.md) antes de alterar o roteador.
+Exemplo: se a instância `creative` usa a porta 19134, o jogador entra pelo hostname `meu-servidor.example` e porta 19134. Consulte o [guia externo](../docs/acesso-remoto.md) antes de alterar o roteador.
 
 ## Retenção, backups e erros
 

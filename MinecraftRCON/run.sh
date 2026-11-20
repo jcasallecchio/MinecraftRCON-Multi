@@ -86,7 +86,7 @@ while IFS=$'\t' read -r instance_id display_name world_name udp_port api_port al
   [[ -n "$instance_id" ]] || continue
   instance_dir="$INSTANCE_ROOT/$instance_id"
   mkdir -p "$instance_dir"
-  log "Iniciando '$display_name' (id=$instance_id, jogo UDP $udp_port-$((udp_port + 1)), API TCP $api_port)."
+  log "Iniciando '$display_name' (id=$instance_id, jogo TCP $udp_port / UDP $udp_port, API TCP $api_port)."
   MINECRAFT_INSTANCE_ID="$instance_id" \
   MINECRAFT_SERVER_DIR="$instance_dir" \
   SCREEN_SESSION="bedrock_${instance_id}" \

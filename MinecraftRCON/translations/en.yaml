@@ -28,5 +28,5 @@ configuration:
         name: World folder name
         description: To import an existing world, this must exactly match its folder inside worlds.
       udp_port:
-        name: Game UDP port
-        description: Player connection port. The next port is reserved for the IPv6 setting.
+        name: Game port
+        description: Port used for NetherNet TCP signaling and UDP gameplay. Forward both TCP and UDP on this same port in your router.

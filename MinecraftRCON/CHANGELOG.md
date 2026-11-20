@@ -1,5 +1,10 @@
 # Histórico de versões
 
+## 0.3.1 — Corrige portas de jogo no NetherNet
+- Configura `server-udp-ports` com a porta de cada instância, evitando que mundos secundários enviem o tráfego UDP para a porta da primeira instância.
+- Atualiza o formulário e a documentação para explicar o uso de TCP e UDP na mesma porta configurada.
+- Declara as portas TCP e UDP de jogo no add-on, além das APIs RCON.
+
 ## 0.3.0 — Padrões de instalação inicial
 - Novos usuários começam com a lista de instâncias vazia; o add-on aguarda configuração sem entrar em ciclo de falha.
 - Desativa a allowlist por padrão, com opção para ativá-la nas configurações.

@@ -415,6 +415,7 @@ settings = {
     "transport": "nethernet",
     "server-port": sys.argv[2],
     "server-portv6": sys.argv[3],
+    "server-udp-ports": sys.argv[2],
     "enable-lan-visibility": "false",
     "allow-list": sys.argv[5],
     "emit-server-telemetry": sys.argv[6],
