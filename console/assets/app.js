@@ -324,7 +324,6 @@
     $('#commandForm').hidden = feed;
     $('.suggestion-wrap').hidden = feed;
     $('.terminal-footer').hidden = feed;
-    $('#clearTerminal').hidden = feed;
     $('#outputToggle').textContent = feed ? 'Terminal' : 'Feed';
     $('#outputToggle').setAttribute('aria-pressed', String(feed));
     $('#outputHeading').textContent = feed ? 'Feed de jogadores' : 'Terminal do servidor';
@@ -508,8 +507,13 @@
   }
   $('#commandForm')?.addEventListener('submit', event => { event.preventDefault(); executeCommand($('#commandInput').value); });
   $('#clearTerminal')?.addEventListener('click', () => {
-    $('#terminalOutput').replaceChildren();
-    appendTerminal('Tela limpa. Os registros permanentes continuam no Histórico.', 'system', '◆');
+    if (outputMode === 'feed') {
+      $('#feedOutput').replaceChildren();
+      appendOutput($('#feedOutput'), 'Feed limpo nesta tela. Novos eventos aparecerão automaticamente.', 'system', '◆');
+    } else {
+      $('#terminalOutput').replaceChildren();
+      appendTerminal('Tela limpa. Os registros permanentes continuam no Histórico.', 'system', '◆');
+    }
   });
   $$('.quick-command').forEach(button => button.addEventListener('click', () => executeCommand(button.dataset.command || '')));
   $('#refreshButton')?.addEventListener('click', () => refreshStatus(true));
