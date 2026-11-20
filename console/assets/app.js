@@ -483,7 +483,6 @@
     }
   }
   $('#commandForm')?.addEventListener('submit', event => { event.preventDefault(); executeCommand($('#commandInput').value); });
-  $('#helpButton')?.addEventListener('click', () => executeCommand('help'));
   $('#clearTerminal')?.addEventListener('click', () => {
     $('#terminalOutput').replaceChildren();
     appendTerminal('Tela limpa. Os registros permanentes continuam no Histórico.', 'system', '◆');

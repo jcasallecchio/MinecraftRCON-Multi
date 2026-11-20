@@ -118,7 +118,7 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
           <div class="terminal-card">
             <div class="terminal-toolbar">
               <div class="terminal-heading"><span class="terminal-lamp"></span><div><strong>Terminal do servidor</strong><small>entrada nativa · minecraft-bedrock</small></div></div>
-              <div class="terminal-actions"><span class="terminal-live"><span class="pulse"></span> LIVE</span><button type="button" class="ghost-button" id="instanceControlButton">Parar instância</button><button type="button" class="ghost-button" id="instanceRestartButton">Reiniciar</button><button type="button" class="ghost-button" id="helpButton">Ajuda do servidor</button><button type="button" class="ghost-button" id="clearTerminal">Limpar tela</button></div>
+              <div class="terminal-actions"><span class="terminal-live"><span class="pulse"></span> LIVE</span><button type="button" class="ghost-button" id="instanceControlButton">Parar instância</button><button type="button" class="ghost-button" id="instanceRestartButton">Reiniciar</button><button type="button" class="ghost-button" id="clearTerminal">Limpar tela</button></div>
             </div>
             <div class="terminal-output" id="terminalOutput" role="log" aria-live="polite" aria-label="Saída do console">
               <div class="terminal-line system"><span class="line-time">--:--:--</span><span class="line-marker">◆</span><span>MineDev Console inicializado. Aguardando conexão com Bedrock.</span></div>
@@ -162,6 +162,6 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
     </div>
   </div>
   <div class="toast-region" id="toastRegion" aria-live="polite"></div>
-  <script src="assets/app.js?v=13" defer></script>
+  <script src="assets/app.js?v=14" defer></script>
 </body>
 </html>
