@@ -48,7 +48,7 @@ php tools/initialize.php
 
 O instalador cria o `.env` local e mostra o usuário inicial `admin` e uma senha aleatória. Guarde essa senha no seu gerenciador de senhas. O arquivo guarda somente o hash da senha e o instalador preserva um `.env` existente. No Windows, se `php` não estiver no PATH, use o caminho do executável, por exemplo `C:\xampp\php\php.exe`.
 
-Abra o `.env` em um editor. Para uma instalação Multi, associe cada ID da opção `instances_json` à sua API. Use a mesma ordem que a lista no add-on; a primeira API começa em `19233`, a segunda `19234` e assim por diante. Troque o endereço de exemplo pelo IP local do Home Assistant e copie o `rcon_token` da configuração do add-on.
+Abra o `.env` em um editor. Para uma instalação Multi, associe cada ID da lista **Mundos/instâncias** do add-on à sua API. Use a mesma ordem da lista; a primeira API começa em `19233`, a segunda `19234` e assim por diante. Troque o endereço de exemplo pelo IP local do Home Assistant e copie o `rcon_token` da configuração do add-on.
 
 ~~~dotenv
 BEDROCK_INSTANCES='[{"id":"abydos","name":"Abydos","url":"http://192.168.1.50:19233","token":"SEU_TOKEN_DO_ADDON"},{"id":"creative","name":"Criativo","url":"http://192.168.1.50:19234","token":"SEU_TOKEN_DO_ADDON"}]'

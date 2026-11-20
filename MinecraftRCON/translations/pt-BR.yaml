@@ -1,0 +1,26 @@
+configuration:
+  rcon_token:
+    name: Token de acesso RCON
+    description: Segredo com pelo menos 32 caracteres, compartilhado pelas APIs e pelo console MineDev.
+  rcon_allowed_ips:
+    name: IPs autorizados para a API
+    description: Lista opcional de IPs ou CIDRs separados por vírgula. Vazio permite qualquer IP que alcance a API.
+  backup_interval_hours:
+    name: Intervalo de backup (horas)
+  backup_keep_count:
+    name: Quantidade de backups mantidos
+  instances:
+    name: Mundos/instâncias
+    description: Adicione de 1 a 5 itens usando os campos do formulário. Cada item inicia um servidor Bedrock separado.
+    fields:
+      id:
+        name: ID estável
+        description: Use letras minúsculas, números, hífen ou sublinhado. Não altere depois de criar os dados do mundo.
+      name:
+        name: Nome exibido
+      world_name:
+        name: Nome da pasta do mundo
+        description: Para importar um mundo existente, deve corresponder exatamente à pasta dentro de worlds.
+      udp_port:
+        name: Porta UDP do jogo
+        description: Porta de entrada do jogador. A porta seguinte fica reservada para a configuração IPv6.

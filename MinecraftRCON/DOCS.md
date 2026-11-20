@@ -14,13 +14,13 @@ Este add-on gerencia de uma a cinco instâncias Bedrock simultâneas. Cada mundo
 1. Adicione `https://github.com/jcasallecchio/MinecraftRCON-Multi` em **Configurações → Aplicativos → ⋮ → Repositórios**.
 2. Instale **MinecraftRCON Multi**.
 3. Na configuração do add-on, defina `rcon_token` com um segredo aleatório de pelo menos 32 caracteres. Guarde-o em um gerenciador de senhas.
-4. Configure `instances_json`, salve e inicie o add-on.
+4. Em **Mundos/instâncias**, configure de 1 a 5 entradas usando os campos do formulário. Para adicionar outro mundo, use a ação de adicionar item da lista; não é necessário escrever JSON.
 5. Confira os logs. Na primeira inicialização, cada mundo baixa sua cópia do servidor Bedrock. Aguarde a mensagem de servidor pronto para cada instância.
 6. Adicione manualmente no Minecraft o IP local do Home Assistant e a porta UDP de jogo da instância.
 
 ## Configurar instâncias
 
-`instances_json` é uma lista JSON inserida como texto nas opções do add-on. Cada objeto aceita:
+Na aba de configuração do add-on, edite a lista **Mundos/instâncias**. Cada item tem estes campos:
 
 | Campo | Obrigatório | Descrição |
 | --- | --- | --- |
@@ -29,24 +29,25 @@ Este add-on gerencia de uma a cinco instâncias Bedrock simultâneas. Cada mundo
 | `world_name` | Sim | Valor `level-name` do mundo Bedrock. Para usar um mundo já copiado, deve corresponder ao nome da pasta em `worlds/`. |
 | `udp_port` | Sim | Porta UDP IPv4 do servidor, entre 1024 e 65533. A próxima porta é reservada para `server-portv6`. |
 
-Uma instância:
+O formulário começa com uma instância de exemplo:
 
-~~~json
-[{"id":"main","name":"Abydos","world_name":"Abydos","udp_port":19132}]
-~~~
+- ID: `main`
+- Nome exibido: `Abydos`
+- Nome da pasta do mundo: `Abydos`
+- Porta UDP: `19132`
 
-Duas instâncias simultâneas:
+Para criar outra, adicione uma nova entrada no formulário e preencha, por exemplo:
 
-~~~json
-[
-  {"id":"abydos","name":"Abydos","world_name":"Abydos","udp_port":19132},
-  {"id":"creative","name":"Criativo","world_name":"Criativo","udp_port":19134}
-]
-~~~
+- ID: `creative`
+- Nome exibido: `Criativo`
+- Nome da pasta do mundo: `Criativo`
+- Porta UDP: `19134`
 
 Use portas UDP distintas sem sobreposição: cada instância usa `udp_port` para IPv4 e `udp_port + 1` para IPv6. Os exemplos reservam os pares `19132–19133`, `19134–19135`, `19136–19137`, `19138–19139` e `19140–19141`. A API RCON usa TCP `19233` para o primeiro item da lista, `19234` para o segundo e assim por diante, até `19237`.
 
-Não configure pares UDP que se sobreponham. O add-on valida IDs, nomes, quantidade e colisões de portas antes de iniciar. A ordem da lista define a porta TCP RCON; mantenha a ordem sincronizada com o `.env` do MineDev. Depois de alterar a lista, reinicie o add-on.
+Não configure pares UDP que se sobreponham. O add-on valida IDs, nomes, quantidade e colisões de portas antes de iniciar. A ordem da lista define a porta TCP RCON; mantenha a ordem sincronizada com o `.env` do MineDev. Depois de alterar a lista, salve e reinicie o add-on. IDs definem as pastas persistentes dos mundos; mantenha-os estáveis.
+
+Se você instalou a versão `0.1.0`, converta cada objeto que estava em `instances_json` em um item da lista visual. Preserve `id`, `name`, `world_name` e `udp_port`; o código ainda lê a opção antiga se a nova lista não tiver sido criada.
 
 ## Arquivos de cada mundo
 
@@ -127,6 +128,6 @@ Exemplo: se a instância `creative` usa UDP 19134, o jogador entra pelo hostname
 | --- | --- |
 | `rcon_token` | Segredo Bearer compartilhado pelas APIs. Mínimo 32 caracteres. |
 | `rcon_allowed_ips` | IPs/CIDRs permitidos para as APIs, separados por vírgula. Vazio permite qualquer origem que consiga alcançar as portas. |
-| `instances_json` | Lista de 1 a 5 instâncias no formato documentado acima. |
+| `instances` | Lista de 1 a 5 instâncias editada diretamente no formulário do Home Assistant. |
 | `backup_interval_hours` | Frequência de backup por instância, em horas. |
 | `backup_keep_count` | Quantidade de backups retidos por instância. |

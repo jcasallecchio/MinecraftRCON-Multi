@@ -17,22 +17,22 @@ try:
 except (OSError, json.JSONDecodeError) as exc:
     raise SystemExit(f"[manager] Não foi possível ler as opções do add-on: {exc}")
 
-raw = options.get("instances_json", "")
 token = options.get("rcon_token", "")
 if not isinstance(token, str) or len(token.strip()) < 32:
     raise SystemExit("[manager] Configure rcon_token com pelo menos 32 caracteres antes de iniciar as instâncias.")
-if not isinstance(raw, str):
-    raise SystemExit("[manager] instances_json precisa ser texto JSON nas opções do add-on.")
-if not raw.strip():
-    instances = [{"id": "main", "name": "Abydos", "world_name": "Abydos", "udp_port": 19132}]
-else:
+if isinstance(options.get("instances"), list):
+    instances = options["instances"]
+elif isinstance(options.get("instances_json"), str) and options["instances_json"].strip():
+    # Compatibilidade com configurações criadas na versão 0.1.0.
     try:
-        instances = json.loads(raw)
+        instances = json.loads(options["instances_json"])
     except (TypeError, json.JSONDecodeError) as exc:
-        raise SystemExit(f"[manager] instances_json precisa conter uma lista JSON válida: {exc}")
+        raise SystemExit(f"[manager] A configuração antiga instances_json não contém uma lista JSON válida: {exc}")
+else:
+    instances = [{"id": "main", "name": "Abydos", "world_name": "Abydos", "udp_port": 19132}]
 
 if not isinstance(instances, list) or not 1 <= len(instances) <= 5:
-    raise SystemExit("[manager] Configure de 1 a 5 instâncias em instances_json.")
+    raise SystemExit("[manager] Configure de 1 a 5 instâncias no formulário do add-on.")
 
 seen_ids, seen_ports = set(), set()
 for index, item in enumerate(instances):
@@ -60,7 +60,7 @@ for index, item in enumerate(instances):
     print("\t".join((instance_id, name.strip(), world_name.strip(), str(port), str(19233 + index))))
 PY
 then
-  log "Configuração inválida. Corrija instances_json nas opções do add-on."
+  log "Configuração inválida. Revise a lista de instâncias nas opções do add-on."
   exit 1
 fi
 

@@ -1,0 +1,26 @@
+configuration:
+  rcon_token:
+    name: RCON access token
+    description: Secret with at least 32 characters, shared by the APIs and MineDev console.
+  rcon_allowed_ips:
+    name: API allowed IPs
+    description: Optional comma-separated IP or CIDR list. Empty allows any IP that can reach the API.
+  backup_interval_hours:
+    name: Backup interval (hours)
+  backup_keep_count:
+    name: Backups to keep
+  instances:
+    name: Worlds/instances
+    description: Add 1 to 5 items using the form fields. Each item starts a separate Bedrock server.
+    fields:
+      id:
+        name: Stable ID
+        description: Use lowercase letters, numbers, hyphen, or underscore. Do not change it after world data is created.
+      name:
+        name: Display name
+      world_name:
+        name: World folder name
+        description: To import an existing world, this must exactly match its folder inside worlds.
+      udp_port:
+        name: Game UDP port
+        description: Player connection port. The next port is reserved for the IPv6 setting.
