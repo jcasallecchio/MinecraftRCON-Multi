@@ -233,6 +233,9 @@ function bedrock_instance_configs(): array
             $id = (string)($entry['id'] ?? '');
             $url = rtrim((string)($entry['url'] ?? ''), '/');
             $token = (string)($entry['token'] ?? '');
+            if ($token === '${BEDROCK_API_TOKEN}') {
+                $token = (string)$GLOBALS['BEDROCK_API_TOKEN'];
+            }
             $name = trim((string)($entry['name'] ?? $id));
             if (!preg_match('/^[a-z0-9][a-z0-9_-]{0,31}$/', $id) || $url === '' || $token === '') continue;
             $instances[$id] = ['id' => $id, 'name' => $name !== '' ? $name : $id, 'url' => $url, 'token' => $token];

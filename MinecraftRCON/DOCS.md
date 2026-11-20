@@ -103,7 +103,8 @@ Para iniciar, parar ou reiniciar um mundo individual pelo MineDev, use o seletor
 No arquivo `.env` privado da instalação do console, associe cada ID a URL e token da API de sua posição na lista:
 
 ~~~dotenv
-BEDROCK_INSTANCES='[{"id":"abydos","name":"Abydos","url":"http://192.168.1.50:19233","token":"TOKEN_LONGO_DA_API"},{"id":"creative","name":"Criativo","url":"http://192.168.1.50:19234","token":"TOKEN_LONGO_DA_API"}]'
+BEDROCK_API_TOKEN=TOKEN_LONGO_DA_API
+BEDROCK_INSTANCES='[{"id":"abydos","name":"Abydos","url":"http://192.168.1.50:19233","token":"${BEDROCK_API_TOKEN}"},{"id":"creative","name":"Criativo","url":"http://192.168.1.50:19234","token":"${BEDROCK_API_TOKEN}"}]'
 ~~~
 
 O mesmo `rcon_token` pode ser usado em todas as APIs deste add-on. O MineDev valida a instância no servidor PHP e não envia tokens ao navegador. Se o console estiver no mesmo host, troque `192.168.1.50` pelo IP ou nome alcançável a partir do processo PHP.
