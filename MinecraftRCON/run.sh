@@ -70,7 +70,7 @@ shutdown() {
   for pid in "${INSTANCE_PIDS[@]}"; do kill -TERM "$pid" 2>/dev/null || true; done
   for pid in "${INSTANCE_PIDS[@]}"; do wait "$pid" 2>/dev/null || true; done
 }
-trap shutdown TERM INT
+trap 'shutdown; exit 0' TERM INT
 
 while IFS=$'\t' read -r instance_id display_name world_name udp_port api_port; do
   [[ -n "$instance_id" ]] || continue
