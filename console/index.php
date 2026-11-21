@@ -22,7 +22,7 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="assets/icon-180.png">
-  <link rel="stylesheet" href="assets/app.css?v=25">
+  <link rel="stylesheet" href="assets/app.css?v=26">
 </head>
 <body class="<?= $isAuthenticated ? 'authenticated' : 'guest' ?>">
   <div class="ambient ambient-one"></div>
@@ -109,7 +109,7 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
 
       <main class="main-content">
         <div class="page-heading">
-          <div><div class="eyebrow">MINECRAFT · SERVER TOOLS</div><h1>Console <span class="heading-slash">/</span> <span id="pageTitle">Visão geral</span></h1></div>
+          <div><h1>Console <span class="heading-slash">/</span> <span id="pageTitle">Visão geral</span></h1></div>
           <div class="heading-right"><div class="uptime-box"><span class="tiny-label">TEMPO ONLINE</span><strong id="uptimeValue">—</strong></div><button class="icon-button refresh-button" type="button" id="refreshButton" aria-label="Atualizar telemetria" title="Atualizar">⟳</button></div>
         </div>
 
@@ -142,7 +142,6 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
         </section>
 
         <section class="view" id="view-properties" data-view="properties">
-          <div class="section-intro"><div><div class="eyebrow">INSTÂNCIA SELECIONADA · SERVER.PROPERTIES</div></div></div>
           <div class="properties-card">
             <textarea id="propertiesEditor" class="properties-editor" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Editar server.properties da instância selecionada" disabled></textarea>
             <div class="properties-actions"><button class="ghost-button" type="button" id="propertiesReload">Recarregar arquivo</button><button class="button secondary" type="button" id="propertiesSave" disabled>Salvar</button><button class="button primary" type="button" id="propertiesSaveRestart" disabled>Salvar e reiniciar</button></div>
@@ -150,24 +149,21 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
         </section>
 
         <section class="view" id="view-stats" data-view="stats">
-          <div class="section-intro"><div><div class="eyebrow">JOGADORES · ESTATÍSTICAS</div></div><span class="terminal-live"><span class="pulse"></span> ATUALIZAÇÃO AUTOMÁTICA</span></div>
           <div class="stats-summary" id="statsSummary"></div>
-          <div class="stats-tools"><label class="search-box"><span>⌕</span><input id="statsSearch" type="search" placeholder="Filtrar jogador…" autocomplete="off"></label><button class="ghost-button" id="statsRefresh" type="button">Atualizar estatísticas ⟳</button><span class="activity-updated" id="statsUpdated">Aguardando dados…</span></div>
+          <div class="stats-tools"><label class="search-box"><span>⌕</span><input id="statsSearch" type="search" placeholder="Filtrar jogador…" autocomplete="off"></label><button class="ghost-button" id="statsRefresh" type="button">Atualizar estatísticas ⟳</button><span class="terminal-live"><span class="pulse"></span> ATUALIZAÇÃO AUTOMÁTICA</span><span class="activity-updated" id="statsUpdated">Aguardando dados…</span></div>
           <div class="player-stats-grid" id="playerStatsList" aria-live="polite" aria-label="Estatísticas de jogadores"></div>
           <div class="catalog-note"><span>ⓘ</span><span>Tempo de jogo é calculado entre os eventos de entrada e saída. O total continua salvo entre reinicializações; o feed de eventos mantém sua retenção separada.</span></div>
         </section>
 
         <section class="view" id="view-commands" data-view="commands">
-          <div class="section-intro"><div><div class="eyebrow">BEDROCK COMMAND REFERENCE</div></div><a class="text-link" href="https://learn.microsoft.com/en-us/minecraft/creator/commands/commands?view=minecraft-bedrock-stable" target="_blank" rel="noreferrer">Referência oficial ↗</a></div>
-          <div class="catalog-tools"><label class="search-box"><span>⌕</span><input id="catalogSearch" type="search" placeholder="Buscar comando ou descrição…" autocomplete="off"></label><div class="category-filters" id="categoryFilters"></div></div>
+          <div class="catalog-tools"><label class="search-box"><span>⌕</span><input id="catalogSearch" type="search" placeholder="Buscar comando ou descrição…" autocomplete="off"></label><div class="category-filters" id="categoryFilters"></div><a class="text-link" href="https://learn.microsoft.com/en-us/minecraft/creator/commands/commands?view=minecraft-bedrock-stable" target="_blank" rel="noreferrer">Referência oficial ↗</a></div>
           <div class="command-grid" id="commandGrid"></div>
           <div class="catalog-note"><span>ⓘ</span><span>As sugestões seguem a referência oficial. A lista e a sintaxe efetiva podem variar por versão, permissões, cheats e pacotes. O console aceita comandos nativos Bedrock mesmo quando não aparecem aqui.</span></div>
-          <div class="glossary-section"><div class="section-title-row"><div><div class="eyebrow">VOCABULÁRIO</div><h2>Glossário rápido</h2></div><label class="search-box glossary-search"><span>⌕</span><input id="glossarySearch" type="search" placeholder="Buscar termo…" autocomplete="off"></label></div><div class="glossary-grid" id="glossaryGrid"></div></div>
+          <div class="glossary-section"><div class="section-title-row"><div><h2>Glossário rápido</h2></div><label class="search-box glossary-search"><span>⌕</span><input id="glossarySearch" type="search" placeholder="Buscar termo…" autocomplete="off"></label></div><div class="glossary-grid" id="glossaryGrid"></div></div>
         </section>
 
         <section class="view" id="view-history" data-view="history">
-          <div class="section-intro"><div><div class="eyebrow">REGISTRO DE AUDITORIA</div></div><a class="button secondary export-button" href="api.php?action=export">↓ Exportar CSV</a></div>
-          <div class="history-tools"><label class="search-box"><span>⌕</span><input id="historySearch" type="search" placeholder="Filtrar histórico…" autocomplete="off"></label><button class="ghost-button" id="historyRefresh" type="button">Atualizar histórico ⟳</button></div>
+          <div class="history-tools"><label class="search-box"><span>⌕</span><input id="historySearch" type="search" placeholder="Filtrar histórico…" autocomplete="off"></label><button class="ghost-button" id="historyRefresh" type="button">Atualizar histórico ⟳</button><a class="button secondary export-button" href="api.php?action=export">↓ Exportar CSV</a></div>
           <div class="history-list" id="historyList"></div>
           <div class="history-more-wrap"><button class="ghost-button" id="historyMore" type="button" hidden>Carregar registros anteriores</button></div>
           <div class="catalog-note"><span>🔒</span><span>Senha, token e cabeçalhos de autenticação nunca são registrados. Os comandos e retornos do servidor são mantidos para auditoria por até <?= $LOG_RETENTION_DAYS ?> dia(s).</span></div>

@@ -215,3 +215,8 @@ body.authenticated .view.active#view-properties{flex:1;min-height:0;display:flex
   .properties-editor{font-size:11px;padding:9px}
   .properties-actions .button{padding:9px 10px;font-size:11px}
 }
+
+/* Uniform gap between navigation and content in every authenticated view. */
+body.authenticated .tabs{margin-bottom:0}
+body.authenticated .view{padding-top:16px}
+@media(max-width:780px){body.authenticated .view{padding-top:12px}}
