@@ -479,10 +479,9 @@
     const argumentIndex = Math.max(0, parts.length - 1);
     const partial = trailingSpace ? '' : (parts[parts.length - 1] || '').toLowerCase();
     const previousArgs = parts.slice(1, argumentIndex);
-    const playerNames = [...new Set([
-      ...(lastTelemetry?.players?.names || []),
-      ...playerStats.map(player => player.name).filter(Boolean),
-    ])];
+    const playerNames = [...new Set((lastTelemetry?.players?.names || [])
+      .filter(player => typeof player === 'string' && player.trim())
+      .map(player => player.trim()))];
     const players = playerNames.map(player => ({ value: player, label: 'jogador', kind: 'argument' }));
     const selectors = (catalog.selectors || []).map(item => ({ value: item.value, label: item.label, kind: 'argument' }));
     const schemas = catalog.command_schemas?.[name] || [];
