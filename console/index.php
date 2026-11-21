@@ -142,18 +142,16 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
         </section>
 
         <section class="view" id="view-properties" data-view="properties">
-          <div class="section-intro"><div><div class="eyebrow">INSTÂNCIA SELECIONADA · SERVER.PROPERTIES</div><h2>Configuração do servidor</h2><p>Edite as opções deste mundo. As alterações entram em vigor após reiniciar a instância.</p></div></div>
+          <div class="section-intro"><div><div class="eyebrow">INSTÂNCIA SELECIONADA · SERVER.PROPERTIES</div><h2>Configuração do servidor</h2></div></div>
           <div class="properties-card">
-            <div class="properties-toolbar"><div><strong id="propertiesInstanceName">Carregando…</strong><small id="propertiesState">Aguardando arquivo</small></div><button class="ghost-button" type="button" id="propertiesReload">Recarregar arquivo</button></div>
-            <p class="properties-note">Portas, transporte, nome do mundo, allowlist e telemetria são definidos pelo add-on. Altere esses campos nas configurações do add-on.</p>
-            <label class="properties-label" for="propertiesEditor">Conteúdo de server.properties</label>
+            <div class="properties-toolbar"><button class="ghost-button" type="button" id="propertiesReload">Recarregar arquivo</button></div>
             <textarea id="propertiesEditor" class="properties-editor" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Editar server.properties da instância selecionada" disabled></textarea>
             <div class="properties-actions"><span id="propertiesHint">Selecione uma instância para carregar.</span><button class="button secondary" type="button" id="propertiesSave" disabled>Salvar</button><button class="button primary" type="button" id="propertiesSaveRestart" disabled>Salvar e reiniciar</button></div>
           </div>
         </section>
 
         <section class="view" id="view-stats" data-view="stats">
-          <div class="section-intro"><div><div class="eyebrow">JOGADORES · ESTATÍSTICAS</div><h2>Desempenho por jogador</h2><p>Tempo de jogo, sessões, mortes e última atividade, acumulados pelo servidor.</p></div><span class="terminal-live"><span class="pulse"></span> ATUALIZAÇÃO AUTOMÁTICA</span></div>
+          <div class="section-intro"><div><div class="eyebrow">JOGADORES · ESTATÍSTICAS</div><h2>Desempenho por jogador</h2></div><span class="terminal-live"><span class="pulse"></span> ATUALIZAÇÃO AUTOMÁTICA</span></div>
           <div class="stats-summary" id="statsSummary"></div>
           <div class="stats-tools"><label class="search-box"><span>⌕</span><input id="statsSearch" type="search" placeholder="Filtrar jogador…" autocomplete="off"></label><button class="ghost-button" id="statsRefresh" type="button">Atualizar estatísticas ⟳</button><span class="activity-updated" id="statsUpdated">Aguardando dados…</span></div>
           <div class="player-stats-grid" id="playerStatsList" aria-live="polite" aria-label="Estatísticas de jogadores"></div>
@@ -161,7 +159,7 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
         </section>
 
         <section class="view" id="view-commands" data-view="commands">
-          <div class="section-intro"><div><div class="eyebrow">BEDROCK COMMAND REFERENCE</div><h2>Comandos e glossário</h2><p>Autocomplete para comandos documentados, com sintaxe rápida e termos úteis.</p></div><a class="text-link" href="https://learn.microsoft.com/en-us/minecraft/creator/commands/commands?view=minecraft-bedrock-stable" target="_blank" rel="noreferrer">Referência oficial ↗</a></div>
+          <div class="section-intro"><div><div class="eyebrow">BEDROCK COMMAND REFERENCE</div><h2>Comandos e glossário</h2></div><a class="text-link" href="https://learn.microsoft.com/en-us/minecraft/creator/commands/commands?view=minecraft-bedrock-stable" target="_blank" rel="noreferrer">Referência oficial ↗</a></div>
           <div class="catalog-tools"><label class="search-box"><span>⌕</span><input id="catalogSearch" type="search" placeholder="Buscar comando ou descrição…" autocomplete="off"></label><div class="category-filters" id="categoryFilters"></div></div>
           <div class="command-grid" id="commandGrid"></div>
           <div class="catalog-note"><span>ⓘ</span><span>As sugestões seguem a referência oficial. A lista e a sintaxe efetiva podem variar por versão, permissões, cheats e pacotes. O console aceita comandos nativos Bedrock mesmo quando não aparecem aqui.</span></div>
@@ -169,7 +167,7 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
         </section>
 
         <section class="view" id="view-history" data-view="history">
-          <div class="section-intro"><div><div class="eyebrow">REGISTRO DE AUDITORIA</div><h2>Histórico de comandos</h2><p>Persistente no servidor. Expiração automática dos registros mais antigos após <?= $LOG_RETENTION_DAYS ?> dia(s).</p></div><a class="button secondary export-button" href="api.php?action=export">↓ Exportar CSV</a></div>
+          <div class="section-intro"><div><div class="eyebrow">REGISTRO DE AUDITORIA</div><h2>Histórico de comandos</h2></div><a class="button secondary export-button" href="api.php?action=export">↓ Exportar CSV</a></div>
           <div class="history-tools"><label class="search-box"><span>⌕</span><input id="historySearch" type="search" placeholder="Filtrar histórico…" autocomplete="off"></label><button class="ghost-button" id="historyRefresh" type="button">Atualizar histórico ⟳</button></div>
           <div class="history-list" id="historyList"></div>
           <div class="history-more-wrap"><button class="ghost-button" id="historyMore" type="button" hidden>Carregar registros anteriores</button></div>

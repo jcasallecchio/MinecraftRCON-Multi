@@ -172,8 +172,8 @@
     propertiesRevision = '';
     propertiesInstance = '';
     $('#propertiesEditor').disabled = true;
-    $('#propertiesState').textContent = 'Carregando arquivo…';
-    $('#propertiesInstanceName').textContent = $('#instancePicker')?.selectedOptions[0]?.textContent || requestedInstance;
+    const propertiesState = $('#propertiesState');
+    if (propertiesState) propertiesState.textContent = 'Carregando arquivo…';
     updatePropertiesButtons();
     try {
       const result = await api('server-properties');
@@ -182,10 +182,10 @@
       propertiesRevision = result.revision;
       propertiesInstance = requestedInstance;
       $('#propertiesEditor').value = result.content;
-      $('#propertiesState').textContent = 'Arquivo carregado';
+      if (propertiesState) propertiesState.textContent = 'Arquivo carregado';
     } catch (error) {
       if (requestedInstance !== activeInstance) return;
-      $('#propertiesState').textContent = 'Arquivo indisponível';
+      if (propertiesState) propertiesState.textContent = 'Arquivo indisponível';
       propertiesError = error.message;
       toast(error.message, 'error');
     } finally {
@@ -203,7 +203,8 @@
     const requestedInstance = activeInstance;
     const content = $('#propertiesEditor').value;
     propertiesBusy = true;
-    $('#propertiesState').textContent = restart ? 'Salvando e reiniciando…' : 'Salvando…';
+    const propertiesState = $('#propertiesState');
+    if (propertiesState) propertiesState.textContent = restart ? 'Salvando e reiniciando…' : 'Salvando…';
     updatePropertiesButtons();
     try {
       const result = await api('server-properties', { method: 'PUT', body: { content, revision: propertiesRevision, restart } });
@@ -211,12 +212,12 @@
       propertiesOriginal = content;
       propertiesRevision = result.revision;
       propertiesError = '';
-      $('#propertiesState').textContent = result.status === 'restarting' ? 'Reinício solicitado' : 'Arquivo salvo';
+      if (propertiesState) propertiesState.textContent = result.status === 'restarting' ? 'Reinício solicitado' : 'Arquivo salvo';
       toast(result.message || 'Propriedades salvas.', restart && result.status !== 'restarting' ? 'error' : '');
       if (result.status === 'restarting') window.setTimeout(() => refreshStatus(false), 1500);
     } catch (error) {
       if (requestedInstance !== activeInstance) return;
-      $('#propertiesState').textContent = error.status === 409 ? 'Conflito de edição' : 'Falha ao salvar';
+      if (propertiesState) propertiesState.textContent = error.status === 409 ? 'Conflito de edição' : 'Falha ao salvar';
       toast(error.message, 'error');
     } finally {
       if (requestedInstance === activeInstance) { propertiesBusy = false; updatePropertiesButtons(); }
