@@ -290,10 +290,6 @@
       if (controlButton) { controlButton.dataset.action = running ? 'stop' : 'start'; controlButton.textContent = running ? 'Parar instância' : 'Iniciar instância'; controlButton.disabled = false; }
       const restartButton = $('#instanceRestartButton');
       if (restartButton) restartButton.disabled = !running;
-      $('#connectionHint').textContent = running
-        ? (players?.stale ? 'Telemetria de jogadores atualizando…' : `Amostra de jogadores: ${players?.sample_age_seconds ?? 0}s`)
-        : (state.connection_error || 'Servidor Bedrock indisponível');
-      $('#connectionHint').title = $('#connectionHint').textContent;
       if (showToast) toast(running ? 'Telemetria atualizada.' : label, running ? '' : 'error');
     } catch (error) {
       if (requestedInstance !== activeInstance) return;
@@ -301,7 +297,6 @@
       setConnection(false, error.status === 401 ? 'Sessão expirada' : 'API indisponível');
       $('#commandInput').disabled = true;
       $('#sendButton').disabled = true;
-      $('#connectionHint').textContent = error.message;
       if (error.status === 401) window.location.reload();
       if (showToast) toast(error.message, 'error');
     }
@@ -401,7 +396,6 @@
     $('#outputToggle').textContent = feed ? 'Terminal' : 'Feed';
     $('#outputToggle').setAttribute('aria-pressed', String(feed));
     $('#outputHeading').textContent = feed ? 'Feed de jogadores' : 'Terminal do servidor';
-    $('#outputSubtitle').textContent = feed ? 'entradas · saídas · mortes' : 'entrada nativa · minecraft-bedrock';
     hideSuggestions();
     const output = feed ? $('#feedOutput') : $('#terminalOutput');
     output.scrollTop = output.scrollHeight;
@@ -789,7 +783,6 @@
         $('#worldName').textContent = 'Carregando…';
         $('#worldPort').textContent = 'UDP —';
         $('#mobileServerName').textContent = 'Carregando…';
-        $('#connectionHint').textContent = `Consultando ${picker.selectedOptions[0]?.textContent || activeInstance}…`;
         renderPlayerStats();
         propertiesRevision = '';
         propertiesInstance = '';

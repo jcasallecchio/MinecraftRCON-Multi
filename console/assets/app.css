@@ -220,3 +220,6 @@ body.authenticated .view.active#view-properties{flex:1;min-height:0;display:flex
 body.authenticated .tabs{margin-bottom:0}
 body.authenticated .view{padding-top:16px}
 @media(max-width:780px){body.authenticated .view{padding-top:12px}}
+.stats-refresh-row{display:flex;align-items:center;gap:10px;min-width:0}
+.stats-refresh-row .activity-updated{margin-left:0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:780px){.stats-tools .stats-refresh-row{width:100%;justify-content:flex-start}.stats-tools .stats-refresh-row .activity-updated{width:auto;margin-left:0}}
