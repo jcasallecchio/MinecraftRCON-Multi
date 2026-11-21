@@ -90,21 +90,17 @@ O mapa é um snapshot web privado por instância. Ele representa os chunks grava
 Para gerar ou atualizar o mapa:
 
 1. Baixe o **uNmINeD CLI** somente pelo [site oficial](https://unmined.net/downloads/). O repositório não distribui o executável: a licença do uNmINeD permite uso gratuito, mas proíbe redistribuí-lo ou modificá-lo.
-2. No MineDev, use **Parar instância** na instância desejada e aguarde o servidor encerrar. Copie a pasta completa `worlds/<nome-do-mundo>` para uma pasta temporária do computador. Não renderize nem copie o LevelDB enquanto o servidor estiver ativo.
-3. Execute o CLI apontando `--world` para a cópia e `--output` para `storage/maps/<id-da-instância>`. Exemplo no Windows:
+2. No Windows que consegue acessar o compartilhamento do servidor, abra PowerShell na pasta instalada `minedev/` e execute o script abaixo. Ele lê os dados da instância no `.env`, para somente aquele mundo, aguarda o encerramento confirmado no log, copia o LevelDB fechado, renderiza em uma pasta temporária e publica o mapa por troca atômica. O script sempre solicita a inicialização da instância ao terminar.
 
 ~~~powershell
-& 'C:\Ferramentas\uNmINeD\unmined-cli.exe' web render `
-  --world='C:\Temp\Abydos' `
-  --output='C:\xampp\htdocs\minedev\storage\maps\main' `
-  --dimension=overworld --imageformat=png --zoomout=5 --zoomin=0 --chunkprocessors=2
-
-@{ world_name='Abydos'; instance_id='main'; generated_at=(Get-Date).ToString('o'); renderer='uNmINeD CLI' } |
-  ConvertTo-Json | Set-Content 'C:\xampp\htdocs\minedev\storage\maps\main\map-info.json' -Encoding utf8
+& '.\tools\refresh-map.ps1' `
+  -ServerShareRoot '\\192.168.1.50\share\minecraftRCON-Multi' `
+  -InstanceId 'main' `
+  -WorldName 'Abydos' `
+  -RendererPath 'C:\Ferramentas\uNmINeD\unmined-cli.exe'
 ~~~
 
-   Troque os caminhos, o nome e o ID pelo seu ambiente. Na primeira geração, o diretório de saída deve ser gravável pelo PHP; mantenha-o dentro de `storage/` e não publique esses arquivos fora do login.
-4. No MineDev, clique em **Recarregar mapa** e inicie novamente a instância. A página informa a data do snapshot quando `map-info.json` está presente. Os arquivos do mundo e os mapas não devem ser enviados ao GitHub.
+   Troque o compartilhamento, o nome e o ID pelos seus dados. O script usa o token do `.env` apenas em memória e não o imprime. Depois que `/health` confirmar a instância online, abra **Mapa** no MineDev e clique em **Recarregar mapa**. Os arquivos do mundo e os mapas ficam fora do GitHub.
 
 Uma cópia do mundo de Abydos foi gerada e publicada na instalação usada neste projeto. Ela contém somente os 848 chunks salvos naquele snapshot. Instâncias sem exportação própria mostram um estado vazio até que seus mapas sejam publicados.
 
