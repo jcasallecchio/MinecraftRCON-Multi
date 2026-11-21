@@ -258,10 +258,13 @@ if ($action === 'export') {
 
 if ($action === 'catalog') {
     reject_method('GET');
-    $path = __DIR__ . DIRECTORY_SEPARATOR . 'assets' . DIRECTORY_SEPARATOR . 'commands-bedrock.json';
-    $catalog = json_decode((string)file_get_contents($path), true);
-    if (!is_array($catalog)) {
-        json_response(['error' => ['code' => 'catalog_error', 'message' => 'Catálogo de comandos indisponível.']], 500);
+    require_once __DIR__ . DIRECTORY_SEPARATOR . 'catalog_manager.php';
+    $catalog = bedrock_catalog_load();
+    $instanceId = (string)($_GET['instance_id'] ?? 'main');
+    $telemetry = bedrock_request('/api/v1/telemetry', 'GET', null, $instanceId);
+    $serverVersion = $telemetry['data']['server']['version'] ?? null;
+    if (is_string($serverVersion) && $serverVersion !== '') {
+        $catalog['catalog_metadata']['server_version'] = $serverVersion;
     }
     json_response($catalog);
 }

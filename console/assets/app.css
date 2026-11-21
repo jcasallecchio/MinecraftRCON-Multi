@@ -225,3 +225,4 @@ body.authenticated .view{padding-top:16px}
 .stats-status-row .activity-updated{margin:0;white-space:nowrap}
 @media(max-width:780px){.stats-status-row{flex-wrap:wrap}.stats-status-row .terminal-live{display:flex}}
 @media(max-width:780px){body.authenticated .page-footer{font-size:9px}}
+#catalogStatus{display:inline-block;margin-top:5px;color:#768275;font-size:9px;letter-spacing:.02em}

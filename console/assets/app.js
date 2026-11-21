@@ -319,6 +319,16 @@
       renderCategories();
       renderCommands();
       renderGlossary();
+      const source = catalog.catalog_metadata || {};
+      const status = $('#catalogStatus');
+      if (status) {
+        const date = source.updated_at ? new Date(source.updated_at).toLocaleDateString('pt-BR') : '';
+        const version = source.server_version
+          ? `servidor ${source.server_version} · dados oficiais ${source.source_version || 'locais'}`
+          : (source.source_version ? `dados oficiais ${source.source_version}` : 'versão local');
+        const items = Number(source.item_count || catalog.items?.length || 0);
+        status.textContent = `Catálogo ${version} · ${items.toLocaleString('pt-BR')} identificadores de itens${date ? ` · atualizado em ${date}` : ''}`;
+      }
     } catch (error) { toast(`Catálogo: ${error.message}`, 'error'); }
   }
 
@@ -413,13 +423,13 @@
     gamerule: ['doDaylightCycle', 'keepInventory', 'mobGriefing', 'doMobSpawning', 'doWeatherCycle', 'showcoordinates'],
     execute: ['as', 'at', 'if', 'unless', 'run'], scoreboard: ['objectives', 'players'], tickingarea: ['add', 'remove', 'remove_all', 'list']
   };
-  const commonItems = ['diamond', 'minecraft:diamond', 'stone', 'dirt', 'iron_ingot', 'gold_ingot', 'emerald', 'netherite_ingot', 'diamond_sword', 'diamond_pickaxe', 'apple', 'bread', 'torch', 'oak_planks', 'glass', 'command_block'];
+  const exampleItem = 'diamond';
   const commonEntities = ['minecraft:zombie', 'minecraft:skeleton', 'minecraft:creeper', 'minecraft:villager', 'minecraft:warden', 'minecraft:ender_dragon', 'minecraft:iron_golem', 'minecraft:horse'];
 
   function commandExample(command) {
     const name = command.name;
     const selector = (catalog.selectors || []).find(item => item.value === '@p')?.value || '@p';
-    const item = commonItems[0] || 'diamond';
+    const item = exampleItem;
     const examples = {
       give: `${selector} ${item} 10`, time: commonArgs.time.find(value => value === 'query daytime') || 'query daytime',
       gamemode: `survival ${selector}`, difficulty: 'normal', weather: 'clear',
@@ -469,7 +479,14 @@
     let candidates = [];
     if (argumentIndex === 0) return [];
     if (['give', 'clear', 'kick', 'op', 'deop', 'teleport', 'tp', 'effect', 'xp', 'tell', 'msg', 'w', 'spawnpoint', 'kill', 'tag', 'permission'].includes(name) && argumentIndex === 1) candidates = [...players, ...selectors];
-    else if (name === 'give' && argumentIndex === 2) candidates = commonItems.map(value => ({ value, label: 'item', kind: 'argument' }));
+    else if (name === 'give' && argumentIndex === 2) {
+      const itemIds = Array.isArray(catalog.items) ? catalog.items : [exampleItem];
+      const wantsNamespace = partial.startsWith('minecraft:');
+      candidates = itemIds.map(value => ({
+        value: !wantsNamespace && value.startsWith('minecraft:') ? value.slice('minecraft:'.length) : value,
+        label: 'item', kind: 'argument'
+      }));
+    }
     else if (name === 'gamemode' && argumentIndex === 1) candidates = commonArgs.gamemode.map(value => ({ value, label: 'modo', kind: 'argument' }));
     else if (name === 'gamemode' && argumentIndex === 2) candidates = [...players, ...selectors];
     else if (name === 'difficulty' && argumentIndex === 1) candidates = commonArgs.difficulty.map(value => ({ value, label: 'dificuldade', kind: 'argument' }));

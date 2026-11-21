@@ -22,7 +22,7 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="assets/icon-180.png">
-  <link rel="stylesheet" href="assets/app.css?v=30">
+  <link rel="stylesheet" href="assets/app.css?v=31">
 </head>
 <body class="<?= $isAuthenticated ? 'authenticated' : 'guest' ?>">
   <div class="ambient ambient-one"></div>
@@ -156,7 +156,7 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
         <section class="view" id="view-commands" data-view="commands">
           <div class="catalog-tools"><label class="search-box"><span>⌕</span><input id="catalogSearch" type="search" placeholder="Buscar comando ou descrição…" autocomplete="off"></label><div class="category-filters" id="categoryFilters"></div></div>
           <div class="command-grid" id="commandGrid"></div>
-          <div class="catalog-note"><span>ⓘ</span><span>As sugestões seguem a referência oficial. A lista e a sintaxe efetiva podem variar por versão, permissões, cheats e pacotes. O console aceita comandos nativos Bedrock mesmo quando não aparecem aqui.</span></div>
+          <div class="catalog-note"><span>ⓘ</span><span>As sugestões seguem os metadados oficiais do Bedrock. A lista e a sintaxe efetiva podem variar por versão, permissões, cheats e pacotes. O console aceita comandos nativos Bedrock mesmo quando não aparecem aqui.<br><small id="catalogStatus">Carregando catálogo oficial…</small></span></div>
           <div class="glossary-section"><div class="section-title-row"><div><h2>Glossário rápido</h2></div><label class="search-box glossary-search"><span>⌕</span><input id="glossarySearch" type="search" placeholder="Buscar termo…" autocomplete="off"></label></div><div class="glossary-grid" id="glossaryGrid"></div></div>
         </section>
 
@@ -172,6 +172,6 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
     </div>
   </div>
   <div class="toast-region" id="toastRegion" aria-live="polite"></div>
-  <script src="assets/app.js?v=22" defer></script>
+  <script src="assets/app.js?v=23" defer></script>
 </body>
 </html>
