@@ -373,7 +373,7 @@ function bedrock_catalog_load(): array
     $cached = bedrock_catalog_read_json($cachePath);
     if ($cached !== null && isset($cached['_checked_at']) && time() - (int)$cached['_checked_at'] < BEDROCK_CATALOG_TTL) {
         unset($cached['_checked_at']);
-        return $cached;
+        return bedrock_catalog_fill_missing($cached, $base);
     }
 
     $lockPath = STORAGE_DIR . DIRECTORY_SEPARATOR . '.bedrock_catalog.lock';
@@ -384,7 +384,7 @@ function bedrock_catalog_load(): array
         }
         if ($cached !== null) {
             unset($cached['_checked_at']);
-            return $cached;
+            return bedrock_catalog_fill_missing($cached, $base);
         }
         return $base;
     }
@@ -393,7 +393,7 @@ function bedrock_catalog_load(): array
         $cached = bedrock_catalog_read_json($cachePath);
         if ($cached !== null && isset($cached['_checked_at']) && time() - (int)$cached['_checked_at'] < BEDROCK_CATALOG_TTL) {
             unset($cached['_checked_at']);
-            return $cached;
+            return bedrock_catalog_fill_missing($cached, $base);
         }
         $catalog = bedrock_catalog_refresh($base);
         if ($catalog === null) {
@@ -408,9 +408,24 @@ function bedrock_catalog_load(): array
             bedrock_catalog_atomic_write($cachePath, $encoded);
         }
         unset($catalog['_checked_at']);
-        return $catalog;
+        return bedrock_catalog_fill_missing($catalog, $base);
     } finally {
         flock($lock, LOCK_UN);
         fclose($lock);
     }
+}
+
+function bedrock_catalog_fill_missing(array $catalog, array $fallback): array
+{
+    foreach (['commands', 'selectors', 'items', 'blocks', 'entities', 'command_schemas', 'command_enums'] as $key) {
+        if (empty($catalog[$key]) && !empty($fallback[$key])) {
+            $catalog[$key] = $fallback[$key];
+        }
+    }
+    $catalog['catalog_metadata'] = array_merge(
+        $fallback['catalog_metadata'] ?? [],
+        $catalog['catalog_metadata'] ?? []
+    );
+    $catalog['catalog_metadata']['item_count'] = count($catalog['items'] ?? []);
+    return $catalog;
 }

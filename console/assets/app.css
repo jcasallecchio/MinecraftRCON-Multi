@@ -226,3 +226,4 @@ body.authenticated .view{padding-top:16px}
 @media(max-width:780px){.stats-status-row{flex-wrap:wrap}.stats-status-row .terminal-live{display:flex}}
 @media(max-width:780px){body.authenticated .page-footer{font-size:9px}}
 #catalogStatus{display:inline-block;margin-top:5px;color:#768275;font-size:9px;letter-spacing:.02em}
+.suggestion-hint{padding:12px;color:#a5b3a7;font:10px var(--mono)}

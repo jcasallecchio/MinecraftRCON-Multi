@@ -286,6 +286,7 @@
       const canCommand = running;
       $('#commandInput').disabled = !canCommand;
       $('#sendButton').disabled = !canCommand;
+      if (document.activeElement === $('#commandInput')) showSuggestions();
       const controlButton = $('#instanceControlButton');
       if (controlButton) { controlButton.dataset.action = running ? 'stop' : 'start'; controlButton.textContent = running ? 'Parar instância' : 'Iniciar instância'; controlButton.disabled = false; }
       const restartButton = $('#instanceRestartButton');
@@ -329,6 +330,7 @@
         const items = Number(source.item_count || catalog.items?.length || 0);
         status.textContent = `Catálogo ${version} · ${items.toLocaleString('pt-BR')} identificadores de itens${date ? ` · atualizado em ${date}` : ''}`;
       }
+      if (document.activeElement === $('#commandInput')) showSuggestions();
     } catch (error) { toast(`Catálogo: ${error.message}`, 'error'); }
   }
 
@@ -509,10 +511,15 @@
       const enumValues = argument.values || catalog.command_enums?.[type] || [];
       if (enumValues.length) addValues(enumValues, 'opção');
       else if (type === 'SELECTION' || type === 'TARGET' || type === 'TARGETS') candidates.push(...players, ...selectors);
-      else if (type === 'ITEM') addValues(catalog.items || [exampleItem], 'item');
+      else if (type === 'ITEM') addValues(catalog.items?.length ? catalog.items : [exampleItem], 'item');
       else if (type === 'BLOCK' || type === 'BLOCK_ID') addValues(catalog.blocks || [], 'bloco');
       else if (/ENTITY|ACTOR/.test(type)) addValues(catalog.entities || commonEntities, 'entidade');
       else if (type === 'BOOLEAN' || type === 'BOOL') addValues(['true', 'false'], 'booleano');
+    }
+
+    if (!candidates.length && name === 'give') {
+      if (argumentIndex === 1) candidates.push(...players, ...selectors);
+      else if (argumentIndex === 2) addValues(catalog.items?.length ? catalog.items : [exampleItem], 'item');
     }
 
     if (!candidates.length && name === 'time') {
@@ -532,16 +539,36 @@
     const normalized = value.trimStart().replace(/^\//, '');
     if (!/\s/.test(normalized)) {
       const query = normalized.toLowerCase();
+      if ((catalog.commands || []).some(command => command.name.toLowerCase() === query)) {
+        const nextArguments = argumentSuggestions(`${value} `);
+        if (nextArguments.length) return nextArguments.map(item => ({ ...item, syntax: item.label, appendAfterCommand: true }));
+      }
       return (catalog.commands || []).filter(command => command.name.toLowerCase().startsWith(query))
         .map(command => ({ value: command.name, label: command.description, syntax: command.syntax, example: commandExample(command), kind: 'command' }));
     }
     return argumentSuggestions(value).map(item => ({ ...item, syntax: item.label }));
   }
 
+  function currentArgumentHint(value) {
+    const parts = value.trimStart().replace(/^\//, '').split(/\s+/);
+    if (!parts.length || !catalog.command_schemas?.[parts[0].toLowerCase()]) return '';
+    const index = parts.length - 2;
+    const names = [...new Set((catalog.command_schemas[parts[0].toLowerCase()] || [])
+      .map(schema => schema.args?.[index]?.name).filter(Boolean))];
+    return names.length ? `Próximo argumento: ${names.map(name => `<${name}>`).join(' ou ')}` : '';
+  }
+
   function showSuggestions() {
     const box = $('#suggestions'); const input = $('#commandInput');
     const options = currentSuggestions(); box.replaceChildren();
-    if (!options.length || input.disabled) { hideSuggestions(); return; }
+    if (input.disabled) { hideSuggestions(); return; }
+    if (!options.length) {
+      const hint = currentArgumentHint(input.value);
+      if (!hint) { hideSuggestions(); return; }
+      const message = document.createElement('div');
+      message.className = 'suggestion-hint'; message.textContent = hint;
+      box.append(message); box.hidden = false; return;
+    }
     options.forEach((option, index) => {
       const button = document.createElement('button'); button.type = 'button';
       button.className = `suggestion-item${option.kind === 'command' ? ' command-suggestion' : ''}${selectedSuggestion === index ? ' selected' : ''}`;
@@ -565,12 +592,15 @@
     if (option.kind === 'command') {
       const prefix = original.trimStart().startsWith('/') ? '/' : '';
       input.value = `${prefix}${option.value} `;
+    } else if (option.appendAfterCommand) {
+      input.value = `${original} ${option.value} `;
     } else {
       const endsWithSpace = /\s$/.test(original);
       const next = endsWithSpace ? `${original}${option.value} ` : original.replace(/\S+$/, `${option.value} `);
       input.value = next;
     }
-    hideSuggestions(); input.focus();
+    selectedSuggestion = -1;
+    input.focus(); showSuggestions();
   }
 
   $('#commandInput')?.addEventListener('input', () => { selectedSuggestion = -1; showSuggestions(); });
