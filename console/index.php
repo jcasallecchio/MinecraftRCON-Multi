@@ -22,7 +22,7 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="assets/icon-180.png">
-  <link rel="stylesheet" href="assets/app.css?v=24">
+  <link rel="stylesheet" href="assets/app.css?v=25">
 </head>
 <body class="<?= $isAuthenticated ? 'authenticated' : 'guest' ?>">
   <div class="ambient ambient-one"></div>
@@ -144,9 +144,8 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
         <section class="view" id="view-properties" data-view="properties">
           <div class="section-intro"><div><div class="eyebrow">INSTÂNCIA SELECIONADA · SERVER.PROPERTIES</div></div></div>
           <div class="properties-card">
-            <div class="properties-toolbar"><button class="ghost-button" type="button" id="propertiesReload">Recarregar arquivo</button></div>
             <textarea id="propertiesEditor" class="properties-editor" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Editar server.properties da instância selecionada" disabled></textarea>
-            <div class="properties-actions"><span id="propertiesHint">Selecione uma instância para carregar.</span><button class="button secondary" type="button" id="propertiesSave" disabled>Salvar</button><button class="button primary" type="button" id="propertiesSaveRestart" disabled>Salvar e reiniciar</button></div>
+            <div class="properties-actions"><button class="ghost-button" type="button" id="propertiesReload">Recarregar arquivo</button><button class="button secondary" type="button" id="propertiesSave" disabled>Salvar</button><button class="button primary" type="button" id="propertiesSaveRestart" disabled>Salvar e reiniciar</button></div>
           </div>
         </section>
 
@@ -179,6 +178,6 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
     </div>
   </div>
   <div class="toast-region" id="toastRegion" aria-live="polite"></div>
-  <script src="assets/app.js?v=19" defer></script>
+  <script src="assets/app.js?v=20" defer></script>
 </body>
 </html>

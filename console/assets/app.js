@@ -28,7 +28,6 @@
   let propertiesOriginal = '';
   let propertiesInstance = '';
   let propertiesBusy = false;
-  let propertiesError = '';
 
   const glossary = [
     { term: 'Alvo', tag: 'Sintaxe', description: 'Jogador, entidade ou seletor escolhido para receber a ação de um comando.' },
@@ -163,12 +162,10 @@
     $('#propertiesSave').disabled = !ready || !propertiesDirty();
     $('#propertiesSaveRestart').disabled = !ready;
     $('#propertiesEditor').disabled = !ready;
-    $('#propertiesHint').textContent = propertiesBusy ? 'Aguarde…' : propertiesError || (propertiesRevision ? propertiesDirty() ? 'Alterações ainda não salvas.' : 'Arquivo sincronizado com o servidor.' : 'Arquivo ainda não carregado.');
   }
   async function loadProperties() {
     const requestedInstance = activeInstance;
     propertiesBusy = true;
-    propertiesError = '';
     propertiesRevision = '';
     propertiesInstance = '';
     $('#propertiesEditor').disabled = true;
@@ -186,7 +183,6 @@
     } catch (error) {
       if (requestedInstance !== activeInstance) return;
       if (propertiesState) propertiesState.textContent = 'Arquivo indisponível';
-      propertiesError = error.message;
       toast(error.message, 'error');
     } finally {
       if (requestedInstance === activeInstance) { propertiesBusy = false; updatePropertiesButtons(); }
@@ -211,7 +207,6 @@
       if (requestedInstance !== activeInstance) return;
       propertiesOriginal = content;
       propertiesRevision = result.revision;
-      propertiesError = '';
       if (propertiesState) propertiesState.textContent = result.status === 'restarting' ? 'Reinício solicitado' : 'Arquivo salvo';
       toast(result.message || 'Propriedades salvas.', restart && result.status !== 'restarting' ? 'error' : '');
       if (result.status === 'restarting') window.setTimeout(() => refreshStatus(false), 1500);
