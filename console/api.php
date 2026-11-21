@@ -232,7 +232,7 @@ if ($action === 'map-status') {
         'available' => is_file($mapDirectory . DIRECTORY_SEPARATOR . 'index.html'),
         'instance_id' => $instanceId,
         'world_name' => is_array($manifest) ? (string)($manifest['world_name'] ?? '') : '',
-        'generated_at' => is_array($manifest) ? (string)($manifest['generated_at'] ?? '') : '',
+        'generated_at' => is_array($manifest) ? (string)($manifest['snapshot_at'] ?? $manifest['generated_at'] ?? '') : '',
     ]);
 }
 
