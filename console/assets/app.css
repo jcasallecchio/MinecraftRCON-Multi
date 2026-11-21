@@ -180,8 +180,8 @@ body.guest .login-aside{min-height:0;height:100%;}
 }
 
 /* Readable compact labels across desktop and mobile. */
-.aside-meta,.rail-label,.tiny-label,.server-edition,.rail-live,.retention-note,.terminal-live,.terminal-heading small,.page-footer,.connection-pill,.line-time,.enter-hint,.terminal-footer,.command-meta,.category-pill,.catalog-note,.glossary-tag,.history-meta,.history-status,.history-detail,.filter-chip,.player-chip,.server-details span,.info-card small,.protocol-glyph,.suggestion-syntax,.suggestion-example,.instance-picker-label,.command-example,.rail-memory-card>small,.rail-memory-head .tiny-label,.player-stat-metric span,.activity-time{font-size:10px}
-.category-pill,.glossary-tag,.history-status{font-size:9.5px}
+.aside-meta,.rail-label,.tiny-label,.server-edition,.rail-live,.retention-note,.terminal-live,.terminal-heading small,.page-footer,.connection-pill,.line-time,.enter-hint,.terminal-footer,.command-meta,.category-pill,.catalog-note,.glossary-tag,.history-meta,.history-status,.history-detail,.filter-chip,.player-chip,.server-details span,.info-card small,.protocol-glyph,.suggestion-syntax,.suggestion-example,.instance-picker-label,.command-example,.rail-memory-card>small,.rail-memory-head .tiny-label,.player-stat-metric span,.player-stat-last-seen,.stats-summary-card span,.activity-time,.activity-detail,.activity-updated,.filter-select-label{font-size:10px}
+.category-pill,.glossary-tag,.history-status,.player-stat-status{font-size:9.5px}
 .command-card .command-meta{font-size:10px}
 .command-card p,.glossary-item p{font-size:11px}
 .terminal-footer kbd,.tab i{font-size:10px}
@@ -190,7 +190,7 @@ body.guest .login-aside{min-height:0;height:100%;}
   .connection-pill,.mobile-server-strip,.terminal-heading small,.terminal-footer,.history-meta,.page-footer,.activity-time,.page-heading .eyebrow{font-size:10px}
   .ghost-button,.tab,.instance-picker,.command-form input,.terminal-line,.line-time{font-size:10.5px}
   .terminal-heading strong{font-size:11px}
-  .mobile-shortcuts .quick-command{font-size:10px}
+  body.authenticated .mobile-shortcuts .quick-command{font-size:10px}
 }
 
 /* The properties editor uses the available viewport; the file scrolls inside the textarea. */
