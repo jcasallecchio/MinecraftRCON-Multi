@@ -122,6 +122,10 @@ DEATH_MESSAGE_PATTERN = re.compile(
     r")(?P<cause>.*)$",
     re.IGNORECASE,
 )
+STRUCTURED_DEATH_PATTERN = re.compile(
+    r"^(?:player\s+)?(?:died|death)\s*[:=-]\s*(?P<player>[^,:]+)(?:[, :]\s*(?P<cause>.*))?$",
+    re.IGNORECASE,
+)
 
 
 def load_allowed_networks(value):
@@ -378,7 +382,19 @@ def _parse_player_event(line):
     disconnected = re.search(r"\bPlayer disconnected:\s*(?P<player>[^,]+)", text, re.IGNORECASE)
     if disconnected:
         return "leave", disconnected.group("player"), ""
-    death = DEATH_MESSAGE_PATTERN.match(text)
+    # BDS versions/providers can prefix system/chat messages while writing the
+    # same localized death sentence to server.log.
+    text = re.sub(r"^(?:Player message|Chat|System message)\s*:\s*", "", text, flags=re.IGNORECASE)
+    structured_death = STRUCTURED_DEATH_PATTERN.match(text)
+    if structured_death:
+        player = structured_death.group("player").strip().strip("<>\"'")
+        cause = (structured_death.group("cause") or "").strip()
+        return "death", player, cause[:240]
+    # Some wrappers log a named player death as `Player died: Name`.
+    named_death = re.search(r"\bPlayer died:\s*(?P<player>[^,]+)", text, re.IGNORECASE)
+    if named_death:
+        return "death", named_death.group("player").strip(), ""
+    death = DEATH_MESSAGE_PATTERN.match(text.strip().strip("<>\"'"))
     if death:
         return "death", death.group("player"), (death.group("message") + death.group("cause")).strip()
     return None

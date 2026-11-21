@@ -1,5 +1,9 @@
 # Histórico de versões
 
+## 0.3.6 — Reconhece mais formatos de mensagens de morte
+- Aceita mensagens de morte do Bedrock com prefixos de chat/sistema e registros estruturados do servidor.
+- Mantém o incremento persistente da estatística por evento de morte identificado.
+
 ## 0.3.5 — Remove registros de log das estatísticas de jogadores
 - Ignora nomes incompatíveis com jogadores Bedrock ao processar eventos e telemetria.
 - Remove registros inválidos já salvos na base de estatísticas da instância.
