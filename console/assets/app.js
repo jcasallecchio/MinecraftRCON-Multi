@@ -472,28 +472,57 @@
     const parts = input.split(/\s+/);
     const name = (parts[0] || '').toLowerCase();
     const trailingSpace = /\s$/.test(input);
-    const argumentIndex = trailingSpace ? parts.length : parts.length - 1;
+    // parts includes the command at index zero. Subtracting one gives the
+    // current 1-based argument position, including the next position after a space.
+    const argumentIndex = Math.max(0, parts.length - 1);
     const partial = trailingSpace ? '' : (parts[parts.length - 1] || '').toLowerCase();
-    const players = (lastTelemetry?.players?.names || []).map(player => ({ value: player, label: 'jogador online', kind: 'argument' }));
+    const previousArgs = parts.slice(1, argumentIndex);
+    const playerNames = [...new Set([
+      ...(lastTelemetry?.players?.names || []),
+      ...playerStats.map(player => player.name).filter(Boolean),
+    ])];
+    const players = playerNames.map(player => ({ value: player, label: 'jogador', kind: 'argument' }));
     const selectors = (catalog.selectors || []).map(item => ({ value: item.value, label: item.label, kind: 'argument' }));
+    const schemas = catalog.command_schemas?.[name] || [];
+    const matchingSchemas = schemas.filter(schema => previousArgs.every((previous, index) => {
+      const argument = schema.args?.[index];
+      if (!argument) return false;
+      const values = argument.values || [];
+      return !values.length || values.some(option => String(option).toLowerCase() === previous.toLowerCase());
+    }));
     let candidates = [];
-    if (argumentIndex === 0) return [];
-    if (['give', 'clear', 'kick', 'op', 'deop', 'teleport', 'tp', 'effect', 'xp', 'tell', 'msg', 'w', 'spawnpoint', 'kill', 'tag', 'permission'].includes(name) && argumentIndex === 1) candidates = [...players, ...selectors];
-    else if (name === 'give' && argumentIndex === 2) {
-      const itemIds = Array.isArray(catalog.items) ? catalog.items : [exampleItem];
-      const wantsNamespace = partial.startsWith('minecraft:');
-      candidates = itemIds.map(value => ({
-        value: !wantsNamespace && value.startsWith('minecraft:') ? value.slice('minecraft:'.length) : value,
-        label: 'item', kind: 'argument'
-      }));
+    const argumentPosition = argumentIndex - 1;
+    const addValues = (values, label) => {
+      for (const rawValue of values || []) {
+        const value = String(rawValue);
+        const displayValue = !partial.startsWith('minecraft:') && value.startsWith('minecraft:')
+          ? value.slice('minecraft:'.length)
+          : value;
+        candidates.push({ value: displayValue, label, kind: 'argument' });
+      }
+    };
+
+    for (const schema of matchingSchemas) {
+      const argument = schema.args?.[argumentPosition];
+      if (!argument) continue;
+      const type = String(argument.type || '').toUpperCase();
+      const enumValues = argument.values || catalog.command_enums?.[type] || [];
+      if (enumValues.length) addValues(enumValues, 'opção');
+      else if (type === 'SELECTION' || type === 'TARGET' || type === 'TARGETS') candidates.push(...players, ...selectors);
+      else if (type === 'ITEM') addValues(catalog.items || [exampleItem], 'item');
+      else if (type === 'BLOCK' || type === 'BLOCK_ID') addValues(catalog.blocks || [], 'bloco');
+      else if (/ENTITY|ACTOR/.test(type)) addValues(catalog.entities || commonEntities, 'entidade');
+      else if (type === 'BOOLEAN' || type === 'BOOL') addValues(['true', 'false'], 'booleano');
     }
-    else if (name === 'gamemode' && argumentIndex === 1) candidates = commonArgs.gamemode.map(value => ({ value, label: 'modo', kind: 'argument' }));
-    else if (name === 'gamemode' && argumentIndex === 2) candidates = [...players, ...selectors];
-    else if (name === 'difficulty' && argumentIndex === 1) candidates = commonArgs.difficulty.map(value => ({ value, label: 'dificuldade', kind: 'argument' }));
-    else if (name === 'weather' && argumentIndex === 1) candidates = commonArgs.weather.map(value => ({ value, label: 'clima', kind: 'argument' }));
-    else if (name === 'summon' && argumentIndex === 1) candidates = commonEntities.map(value => ({ value, label: 'entidade', kind: 'argument' }));
-    else if (commonArgs[name] && argumentIndex <= 2) candidates = commonArgs[name].map(value => ({ value, label: 'opção', kind: 'argument' }));
-    else if (['tell', 'msg', 'w', 'say', 'me'].includes(name) && argumentIndex >= 2) return [];
+
+    if (!candidates.length && name === 'time') {
+      if (argumentIndex === 1) addValues(['add', 'set', 'query', 'pause', 'resume'], 'opção');
+      else if (argumentIndex === 2 && ['set', 'add'].includes(previousArgs[0])) addValues(['day', 'night', 'noon', 'midnight', '0', '1000', '12000', '18000'], 'horário ou ticks');
+      else if (argumentIndex === 2 && previousArgs[0] === 'query') addValues(['time', 'daytime', 'gametime', 'day'], 'consulta');
+    }
+    if (!candidates.length && commonArgs[name] && argumentIndex <= 2) addValues(commonArgs[name], 'opção');
+
+    candidates = [...new Map(candidates.map(item => [item.value.toLowerCase(), item])).values()];
     return candidates.filter(item => item.value.toLowerCase().startsWith(partial));
   }
 
@@ -503,10 +532,10 @@
     const normalized = value.trimStart().replace(/^\//, '');
     if (!/\s/.test(normalized)) {
       const query = normalized.toLowerCase();
-      return (catalog.commands || []).filter(command => command.name.toLowerCase().startsWith(query)).slice(0, 10)
+      return (catalog.commands || []).filter(command => command.name.toLowerCase().startsWith(query))
         .map(command => ({ value: command.name, label: command.description, syntax: command.syntax, example: commandExample(command), kind: 'command' }));
     }
-    return argumentSuggestions(value).slice(0, 10).map(item => ({ ...item, syntax: item.label }));
+    return argumentSuggestions(value).map(item => ({ ...item, syntax: item.label }));
   }
 
   function showSuggestions() {
@@ -734,6 +763,7 @@
         : [];
       $('#statsUpdated').textContent = `Atualizado às ${new Date().toLocaleTimeString('pt-BR')}`;
       renderPlayerStats();
+      if (document.activeElement === $('#commandInput')) showSuggestions();
     } catch (error) {
       if (requestedInstance !== activeInstance) return;
       if (error.status !== 401) $('#statsUpdated').textContent = `Falha ao atualizar: ${error.message}`;
@@ -745,7 +775,7 @@
 
   async function initializeConsole() {
     await loadInstancePicker();
-    await Promise.all([loadCatalog(), refreshStatus(), loadHistory(true)]);
+    await Promise.all([loadCatalog(), refreshStatus(), loadHistory(true), loadPlayerStats()]);
     if (pollTimer) window.clearInterval(pollTimer);
     if (activityPollTimer) window.clearInterval(activityPollTimer);
     pollTimer = window.setInterval(() => {
@@ -796,8 +826,8 @@
         propertiesInstance = '';
         if ($('#view-properties')?.classList.contains('active')) loadProperties();
         refreshStatus(false);
+        loadPlayerStats();
         if (outputMode === 'feed') loadPlayerEvents(true);
-        if ($('#view-stats')?.classList.contains('active')) loadPlayerStats();
       });
     } catch (error) {
       picker.replaceChildren(new Option('Instância indisponível', 'main'));
