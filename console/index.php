@@ -22,7 +22,7 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="assets/icon-180.png">
-  <link rel="stylesheet" href="assets/app.css?v=28">
+  <link rel="stylesheet" href="assets/app.css?v=29">
 </head>
 <body class="<?= $isAuthenticated ? 'authenticated' : 'guest' ?>">
   <div class="ambient ambient-one"></div>
@@ -148,8 +148,9 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
         </section>
 
         <section class="view" id="view-stats" data-view="stats">
-          <div class="stats-tools"><label class="search-box"><span>⌕</span><input id="statsSearch" type="search" placeholder="Filtrar jogador…" autocomplete="off"></label><div class="stats-refresh-row"><button class="ghost-button" id="statsRefresh" type="button">Atualizar estatísticas ⟳</button><span class="activity-updated" id="statsUpdated">Aguardando dados…</span></div><span class="terminal-live"><span class="pulse"></span> ATUALIZAÇÃO AUTOMÁTICA</span></div>
+          <div class="stats-tools"><label class="search-box"><span>⌕</span><input id="statsSearch" type="search" placeholder="Filtrar jogador…" autocomplete="off"></label><button class="ghost-button" id="statsRefresh" type="button">Atualizar estatísticas ⟳</button></div>
           <div class="player-stats-grid" id="playerStatsList" aria-live="polite" aria-label="Estatísticas de jogadores"></div>
+          <div class="stats-status-row"><span class="activity-updated" id="statsUpdated">Aguardando dados…</span><span class="terminal-live"><span class="pulse"></span> ATUALIZAÇÃO AUTOMÁTICA</span></div>
         </section>
 
         <section class="view" id="view-commands" data-view="commands">
