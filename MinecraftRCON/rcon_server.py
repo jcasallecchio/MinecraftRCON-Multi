@@ -248,6 +248,53 @@ def read_console_output(offset, timeout=CONSOLE_CAPTURE_SECONDS, quiet=CONSOLE_Q
     return lines
 
 
+PLAYER_LIST_PATTERN = re.compile(
+    r"(\d+)\s*/\s*(\d+)\s+players?\s+online\s*:?\s*(.*)",
+    re.IGNORECASE,
+)
+BEDROCK_LOG_PREFIX = re.compile(
+    r"\[\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}(?:[:.]\d+)?\s+[A-Z]+\]"
+)
+
+
+def parse_player_list_output(lines):
+    """Extract names from Bedrock's list response without leaking nearby log lines into it."""
+    for index, line in enumerate(lines):
+        match = PLAYER_LIST_PATTERN.search(line)
+        if not match:
+            continue
+
+        online_count = int(match.group(1))
+        max_count = int(match.group(2))
+        if online_count == 0:
+            return online_count, max_count, []
+
+        candidates = [match.group(3), *lines[index + 1:]]
+        names = []
+        seen = set()
+        for candidate_line in candidates:
+            # A log record can be appended to the list response on the same line.
+            candidate_line = BEDROCK_LOG_PREFIX.split(candidate_line, maxsplit=1)[0].strip()
+            for candidate in candidate_line.split(","):
+                name = candidate.strip().strip("• ")
+                if (
+                    not name
+                    or len(name) > 16
+                    or "[" in name
+                    or "]" in name
+                    or not any(character.isalnum() for character in name)
+                ):
+                    continue
+                key = name.casefold()
+                if key not in seen:
+                    names.append(name)
+                    seen.add(key)
+                if len(names) >= online_count:
+                    return online_count, max_count, names
+        return online_count, max_count, names
+    return None
+
+
 def sample_player_telemetry():
     """Refresh online-player data from Bedrock's native `list` console command."""
     with SERVER_OPERATION_LOCK:
@@ -257,20 +304,16 @@ def sample_player_telemetry():
             log_offset = 0
         if not send_console_command("list"):
             return False
-        output = "\n".join(read_console_output(log_offset))
+        output_lines = read_console_output(log_offset)
 
-    match = re.search(
-        r"(\d+)\s*/\s*(\d+)\s+players?\s+online\s*:?\s*(.*)",
-        output,
-        re.IGNORECASE,
-    )
-    if not match:
+    parsed = parse_player_list_output(output_lines)
+    if parsed is None:
         return False
-    names = [name.strip() for name in match.group(3).split(",") if name.strip()]
+    online_count, max_count, names = parsed
     with TELEMETRY_LOCK:
         PLAYER_TELEMETRY.update({
-            "online_count": int(match.group(1)),
-            "max_count": int(match.group(2)),
+            "online_count": online_count,
+            "max_count": max_count,
             "names": names,
             "updated_at": datetime.now(timezone.utc).isoformat(),
         })

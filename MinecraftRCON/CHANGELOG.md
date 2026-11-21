@@ -1,5 +1,9 @@
 # Histórico de versões
 
+## 0.3.4 — Evita mostrar linhas de log como jogadores
+- Respeita a contagem retornada pelo comando `list` e sempre mantém a lista vazia quando há zero jogadores.
+- Filtra registros de log Bedrock que aparecem junto da resposta, evitando falsos jogadores na telemetria.
+
 ## 0.3.3 — Edição de server.properties no MineDev
 - Expõe leitura e gravação autenticadas do arquivo de propriedades da instância selecionada.
 - Salva de forma atômica, impede sobrescrita de alterações concorrentes e protege campos controlados pelo add-on.
