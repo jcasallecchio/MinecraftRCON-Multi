@@ -584,6 +584,9 @@
       box.append(button);
     });
     box.hidden = false;
+    if (selectedSuggestion >= 0) {
+      box.children[selectedSuggestion]?.scrollIntoView({ block: 'nearest' });
+    }
   }
 
   function chooseSuggestion(option) {
