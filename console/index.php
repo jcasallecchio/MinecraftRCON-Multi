@@ -22,7 +22,7 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="assets/icon-180.png">
-  <link rel="stylesheet" href="assets/app.css?v=29">
+  <link rel="stylesheet" href="assets/app.css?v=30">
 </head>
 <body class="<?= $isAuthenticated ? 'authenticated' : 'guest' ?>">
   <div class="ambient ambient-one"></div>

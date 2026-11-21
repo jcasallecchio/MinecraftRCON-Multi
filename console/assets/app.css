@@ -224,3 +224,4 @@ body.authenticated .view{padding-top:16px}
 .stats-status-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px;padding:9px 2px 0;border-top:1px solid var(--line)}
 .stats-status-row .activity-updated{margin:0;white-space:nowrap}
 @media(max-width:780px){.stats-status-row{flex-wrap:wrap}.stats-status-row .terminal-live{display:flex}}
+@media(max-width:780px){body.authenticated .page-footer{font-size:9px}}
