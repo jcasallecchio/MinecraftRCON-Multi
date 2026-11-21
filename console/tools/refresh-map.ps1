@@ -155,7 +155,7 @@ try {
         renderer = 'uNmINeD CLI'
         dimensions = @('overworld')
     }
-    $utf8WithoutBom = New-Object System.Text.UTF8Encoding($false)
+    $utf8WithoutBom = [System.Text.UTF8Encoding]::new($false)
     [System.IO.File]::WriteAllText((Join-Path $stagePath 'map-info.json'), ($metadata | ConvertTo-Json -Depth 4), $utf8WithoutBom)
 
     $backupPath = Assert-ChildPath (Join-Path $mapsRoot ".backup-$InstanceId-$([guid]::NewGuid().ToString('N'))") $mapsRoot
