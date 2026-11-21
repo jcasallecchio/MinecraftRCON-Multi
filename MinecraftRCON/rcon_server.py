@@ -257,6 +257,17 @@ BEDROCK_LOG_PREFIX = re.compile(
 )
 
 
+def _is_valid_player_name(value):
+    name = str(value or "").strip()
+    return (
+        bool(name)
+        and len(name) <= 16
+        and "[" not in name
+        and "]" not in name
+        and any(character.isalnum() for character in name)
+    )
+
+
 def parse_player_list_output(lines):
     """Extract names from Bedrock's list response without leaking nearby log lines into it."""
     for index, line in enumerate(lines):
@@ -277,13 +288,7 @@ def parse_player_list_output(lines):
             candidate_line = BEDROCK_LOG_PREFIX.split(candidate_line, maxsplit=1)[0].strip()
             for candidate in candidate_line.split(","):
                 name = candidate.strip().strip("• ")
-                if (
-                    not name
-                    or len(name) > 16
-                    or "[" in name
-                    or "]" in name
-                    or not any(character.isalnum() for character in name)
-                ):
+                if not _is_valid_player_name(name):
                     continue
                 key = name.casefold()
                 if key not in seen:
@@ -421,7 +426,7 @@ def get_player_events(after=0, limit=100):
             for line in PLAYER_EVENTS_FILE.read_text(encoding="utf-8").splitlines():
                 try:
                     event = json.loads(line)
-                    if int(event.get("id", 0)) > after:
+                    if int(event.get("id", 0)) > after and _is_valid_player_name(event.get("player")):
                         events.append(event)
                 except (ValueError, TypeError, json.JSONDecodeError):
                     continue
@@ -453,7 +458,7 @@ def _apply_player_stat_event(stats, event):
     if event_id <= int(stats.get("last_event_id", 0)):
         return False
     name = str(event.get("player", "")).strip()
-    if not name:
+    if not _is_valid_player_name(name):
         stats["last_event_id"] = event_id
         return True
     players = stats.setdefault("players", {})
@@ -523,15 +528,22 @@ def get_player_stats():
         try:
             for line in PLAYER_EVENTS_FILE.read_text(encoding="utf-8").splitlines():
                 try:
-                    events.append(json.loads(line))
+                    event = json.loads(line)
+                    if _is_valid_player_name(event.get("player")):
+                        events.append(event)
                 except json.JSONDecodeError:
                     continue
         except OSError:
             pass
         with PLAYER_STATS_LOCK:
             stats = _load_player_stats_unlocked()
-            events.sort(key=lambda event: int(event.get("id", 0)))
             changed = False
+            saved_players = stats.setdefault("players", {})
+            for name in list(saved_players):
+                if not _is_valid_player_name(name):
+                    del saved_players[name]
+                    changed = True
+            events.sort(key=lambda event: int(event.get("id", 0)))
             for event in events:
                 changed = _apply_player_stat_event(stats, event) or changed
             if running and sample_fresh:
@@ -582,6 +594,8 @@ def get_player_stats():
         online_names.clear()
     players = []
     for name, player in stats.get("players", {}).items():
+        if not _is_valid_player_name(name):
+            continue
         online_since = player.get("online_since")
         is_online = name.casefold() in online_names
         session_seconds = max(0, int(now - float(online_since))) if is_online and online_since is not None else 0

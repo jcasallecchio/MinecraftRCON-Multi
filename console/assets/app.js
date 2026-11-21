@@ -677,17 +677,6 @@
   }
 
   function renderPlayerStats() {
-    const online = playerStats.filter(player => player.online).length;
-    const deaths = playerStats.reduce((sum, player) => sum + Number(player.death_count || 0), 0);
-    const playtime = playerStats.reduce((sum, player) => sum + Number(player.playtime_seconds || 0), 0);
-    const summary = $('#statsSummary'); summary.replaceChildren();
-    [["JOGADORES", String(playerStats.length)], ["ONLINE AGORA", String(online)], ["TEMPO JOGADO", formatDuration(playtime)], ["MORTES", String(deaths)]].forEach(([label, value]) => {
-      const card = document.createElement('article'); card.className = 'stats-summary-card';
-      const heading = document.createElement('span'); heading.textContent = label;
-      const metric = document.createElement('strong'); metric.textContent = value;
-      card.append(heading, metric); summary.append(card);
-    });
-
     const query = ($('#statsSearch')?.value || '').trim().toLocaleLowerCase();
     const list = $('#playerStatsList'); list.replaceChildren();
     const players = playerStats.filter(player => player.name.toLocaleLowerCase().includes(query));
@@ -723,7 +712,9 @@
     try {
       const payload = await api('player-stats');
       if (requestedInstance !== activeInstance) return;
-      playerStats = Array.isArray(payload.players) ? payload.players : [];
+      playerStats = Array.isArray(payload.players)
+        ? payload.players.filter(player => typeof player?.name === 'string' && player.name.trim().length > 0 && player.name.trim().length <= 16 && !/[\[\]]/.test(player.name))
+        : [];
       $('#statsUpdated').textContent = `Atualizado às ${new Date().toLocaleTimeString('pt-BR')}`;
       renderPlayerStats();
     } catch (error) {

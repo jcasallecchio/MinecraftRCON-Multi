@@ -22,7 +22,7 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="assets/icon-180.png">
-  <link rel="stylesheet" href="assets/app.css?v=27">
+  <link rel="stylesheet" href="assets/app.css?v=28">
 </head>
 <body class="<?= $isAuthenticated ? 'authenticated' : 'guest' ?>">
   <div class="ambient ambient-one"></div>
@@ -148,7 +148,6 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
         </section>
 
         <section class="view" id="view-stats" data-view="stats">
-          <div class="stats-summary" id="statsSummary"></div>
           <div class="stats-tools"><label class="search-box"><span>⌕</span><input id="statsSearch" type="search" placeholder="Filtrar jogador…" autocomplete="off"></label><div class="stats-refresh-row"><button class="ghost-button" id="statsRefresh" type="button">Atualizar estatísticas ⟳</button><span class="activity-updated" id="statsUpdated">Aguardando dados…</span></div><span class="terminal-live"><span class="pulse"></span> ATUALIZAÇÃO AUTOMÁTICA</span></div>
           <div class="player-stats-grid" id="playerStatsList" aria-live="polite" aria-label="Estatísticas de jogadores"></div>
         </section>
@@ -172,6 +171,6 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
     </div>
   </div>
   <div class="toast-region" id="toastRegion" aria-live="polite"></div>
-  <script src="assets/app.js?v=21" defer></script>
+  <script src="assets/app.js?v=22" defer></script>
 </body>
 </html>

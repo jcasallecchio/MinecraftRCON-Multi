@@ -1,5 +1,9 @@
 # Histórico de versões
 
+## 0.3.5 — Remove registros de log das estatísticas de jogadores
+- Ignora nomes incompatíveis com jogadores Bedrock ao processar eventos e telemetria.
+- Remove registros inválidos já salvos na base de estatísticas da instância.
+
 ## 0.3.4 — Evita mostrar linhas de log como jogadores
 - Respeita a contagem retornada pelo comando `list` e sempre mantém a lista vazia quando há zero jogadores.
 - Filtra registros de log Bedrock que aparecem junto da resposta, evitando falsos jogadores na telemetria.
