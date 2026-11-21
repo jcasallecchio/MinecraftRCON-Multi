@@ -79,8 +79,34 @@ Para trocar o usuário ou a senha, execute `php tools/set-login.php`. Se o PHP l
    O catálogo busca comandos, aliases, opções de argumentos e identificadores de itens, blocos e entidades nos metadados versionados do repositório oficial [Mojang/bedrock-samples](https://github.com/Mojang/bedrock-samples). Quando o catálogo é consultado, o servidor web verifica se há uma nova versão estável; a cópia privada em `storage/bedrock_catalog.json` é atualizada no máximo uma vez a cada 24 horas. Os arquivos distribuídos em `assets/bedrock-items.json` e `assets/bedrock-command-data.json` são usados como fallback se o GitHub estiver indisponível. Para atualizar automaticamente, o PHP precisa ter cURL habilitado, acesso HTTPS de saída a `raw.githubusercontent.com` e permissão de escrita em `storage/`. O autocomplete sugere jogadores/seletor, itens, blocos, entidades e opções válidas para a posição do argumento; digitar filtra a lista. A tela mostra as versões do servidor e dos metadados, além da quantidade de itens carregados. O catálogo oficial cobre itens vanilla; itens personalizados de add-ons não são descobertos automaticamente.
 5. Em **Histórico**, consulte os eventos mais recentes e use **Exportar CSV** para salvar o período disponível. **Limpar tela** limpa apenas o terminal. Os registros são salvos em `storage/`. Quando o painel é acessado, a limpeza periódica remove os eventos que passaram da retenção.
 6. O quadro do **Console** abre em **Terminal**, com comandos e retornos. Clique em **Feed** para ver, no mesmo quadro, entradas, saídas e mortes do mundo selecionado; o botão passa a **Terminal** para voltar. O campo de comandos permanece na mesma posição nas duas visualizações; ao enviar um comando pelo Feed, o painel volta ao Terminal para mostrar o retorno. O Feed carrega até 20 eventos recentes e consulta novos eventos automaticamente a cada cinco segundos enquanto está aberto. **Limpar tela** limpa a visualização aberta, sem apagar o histórico persistente; os eventos do Feed reaparecem quando ele é carregado novamente. O add-on mantém os eventos do Feed por até sete dias.
-7. Em **Estatísticas**, compare tempo jogado, sessões, saídas, mortes e última atividade por jogador. Os totais são persistidos pelo add-on sem expiração e continuam acumulando entre reinicializações.
-8. Em **Configuração**, edite o `server.properties` da instância selecionada. **Salvar** grava o arquivo sem interromper jogadores; **Salvar e reiniciar** grava e reinicia somente essa instância para aplicar as opções. O editor detecta alterações simultâneas e pede para recarregar antes de sobrescrever. Nome do mundo, portas, transporte, allowlist e telemetria são controlados pela configuração do add-on e não podem ser alterados por esse editor. É necessário MinecraftRCON Multi **0.3.3** ou superior.
+7. Em **Mapa**, explore os chunks já visitados no mundo da instância selecionada. O mapa mostra a data do snapshot; **Recarregar mapa** atualiza a visualização do arquivo publicado, sem reler o mundo ativo.
+8. Em **Estatísticas**, compare tempo jogado, sessões, saídas, mortes e última atividade por jogador. Os totais são persistidos pelo add-on sem expiração e continuam acumulando entre reinicializações.
+9. Em **Configuração**, edite o `server.properties` da instância selecionada. **Salvar** grava o arquivo sem interromper jogadores; **Salvar e reiniciar** grava e reinicia somente essa instância para aplicar as opções. O editor detecta alterações simultâneas e pede para recarregar antes de sobrescrever. Nome do mundo, portas, transporte, allowlist e telemetria são controlados pela configuração do add-on e não podem ser alterados por esse editor. É necessário MinecraftRCON Multi **0.3.3** ou superior.
+
+### Publicar ou atualizar um mapa
+
+O mapa é um snapshot web privado por instância. Ele representa os chunks gravados no mundo na hora da cópia; não é um mapa de seed nem acompanha o jogo em tempo real. Os arquivos ficam dentro de `storage/`, que o `.htaccess` bloqueia para acesso direto. A rota autenticada `map/<id>/` entrega o visualizador e os tiles somente a uma sessão MineDev válida.
+
+Para gerar ou atualizar o mapa:
+
+1. Baixe o **uNmINeD CLI** somente pelo [site oficial](https://unmined.net/downloads/). O repositório não distribui o executável: a licença do uNmINeD permite uso gratuito, mas proíbe redistribuí-lo ou modificá-lo.
+2. No MineDev, use **Parar instância** na instância desejada e aguarde o servidor encerrar. Copie a pasta completa `worlds/<nome-do-mundo>` para uma pasta temporária do computador. Não renderize nem copie o LevelDB enquanto o servidor estiver ativo.
+3. Execute o CLI apontando `--world` para a cópia e `--output` para `storage/maps/<id-da-instância>`. Exemplo no Windows:
+
+~~~powershell
+& 'C:\Ferramentas\uNmINeD\unmined-cli.exe' web render `
+  --world='C:\Temp\Abydos' `
+  --output='C:\xampp\htdocs\minedev\storage\maps\main' `
+  --dimension=overworld --imageformat=png --zoomout=5 --zoomin=0 --chunkprocessors=2
+
+@{ world_name='Abydos'; instance_id='main'; generated_at=(Get-Date).ToString('o'); renderer='uNmINeD CLI' } |
+  ConvertTo-Json | Set-Content 'C:\xampp\htdocs\minedev\storage\maps\main\map-info.json' -Encoding utf8
+~~~
+
+   Troque os caminhos, o nome e o ID pelo seu ambiente. Na primeira geração, o diretório de saída deve ser gravável pelo PHP; mantenha-o dentro de `storage/` e não publique esses arquivos fora do login.
+4. No MineDev, clique em **Recarregar mapa** e inicie novamente a instância. A página informa a data do snapshot quando `map-info.json` está presente. Os arquivos do mundo e os mapas não devem ser enviados ao GitHub.
+
+Uma cópia do mundo de Abydos foi gerada e publicada na instalação usada neste projeto. Ela contém somente os 848 chunks salvos naquele snapshot. Instâncias sem exportação própria mostram um estado vazio até que seus mapas sejam publicados.
 
 ### No celular e como aplicativo
 

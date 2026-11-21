@@ -22,7 +22,7 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="assets/icon-180.png">
-  <link rel="stylesheet" href="assets/app.css?v=32">
+  <link rel="stylesheet" href="assets/app.css?v=33">
 </head>
 <body class="<?= $isAuthenticated ? 'authenticated' : 'guest' ?>">
   <div class="ambient ambient-one"></div>
@@ -115,6 +115,7 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
 
         <nav class="tabs" aria-label="Seções do console">
           <button class="tab active" data-tab="console" type="button"><span>⌘</span> Console</button>
+          <button class="tab" data-tab="map" type="button"><span>⌖</span> Mapa</button>
           <button class="tab" data-tab="stats" type="button"><span>▤</span> Estatísticas</button>
           <button class="tab" data-tab="commands" type="button"><span>⌕</span> Comandos & glossário</button>
           <button class="tab" data-tab="properties" type="button"><span>⚙</span> Configuração</button>
@@ -137,6 +138,17 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
               <span class="command-prefix">›</span><input id="commandInput" name="command" type="text" maxlength="1024" spellcheck="false" placeholder="Digite um comando Bedrock…" aria-label="Comando Minecraft" disabled>
               <kbd class="enter-hint">ENTER</kbd><button type="submit" class="send-button" id="sendButton" aria-label="Enviar comando" disabled>↑</button>
             </form>
+          </div>
+        </section>
+
+        <section class="view" id="view-map" data-view="map">
+          <div class="world-map-card">
+            <div class="world-map-toolbar">
+              <div class="world-map-title"><strong>Mapa do mundo</strong><span id="mapStatus" role="status">Verificando mapa…</span></div>
+              <div class="world-map-actions"><span class="world-map-updated" id="mapUpdated"></span><button class="ghost-button" id="mapRefresh" type="button">Recarregar mapa ⟳</button><a class="ghost-button" id="mapOpen" href="#" target="_blank" rel="noopener" hidden>Abrir em outra aba ↗</a></div>
+            </div>
+            <div class="world-map-empty" id="mapEmpty" hidden><span class="world-map-empty-icon">⌖</span><strong>Mapa ainda não disponível</strong><p>Gere um mapa web a partir de uma cópia consistente do mundo e coloque os arquivos exportados em <code>storage/maps/&lt;id-da-instância&gt;/</code>. Consulte o guia de instalação do MineDev.</p></div>
+            <div class="world-map-frame-wrap" id="mapFrameWrap" hidden><iframe id="worldMapFrame" title="Mapa interativo do mundo Minecraft" loading="lazy" referrerpolicy="same-origin" allowfullscreen></iframe></div>
           </div>
         </section>
 
@@ -172,6 +184,6 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
     </div>
   </div>
   <div class="toast-region" id="toastRegion" aria-live="polite"></div>
-<script src="assets/app.js?v=27" defer></script>
+<script src="assets/app.js?v=28" defer></script>
 </body>
 </html>

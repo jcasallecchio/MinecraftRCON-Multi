@@ -145,14 +145,56 @@
     }
     $$('.tab').forEach(tab => tab.classList.toggle('active', tab.dataset.tab === name));
     $$('.view').forEach(view => view.classList.toggle('active', view.dataset.view === name));
-    const titles = { console: 'Visão geral', stats: 'Estatísticas', commands: 'Referência', properties: 'Configuração', history: 'Histórico' };
+    const titles = { console: 'Visão geral', map: 'Mapa', stats: 'Estatísticas', commands: 'Referência', properties: 'Configuração', history: 'Histórico' };
     $('#pageTitle').textContent = titles[name] || 'Visão geral';
     if (name === 'history' && historyRecords.length === 0) loadHistory(true);
+    if (name === 'map') loadMapStatus(true);
     if (name === 'stats') loadPlayerStats();
     if (name === 'properties' && propertiesInstance !== activeInstance) loadProperties();
     if (name === 'console' && outputMode === 'terminal') $('#commandInput').focus();
   }
   $$('.tab').forEach(tab => tab.addEventListener('click', () => switchTab(tab.dataset.tab)));
+
+  async function loadMapStatus(reloadFrame = false) {
+    const requestedInstance = activeInstance;
+    const status = $('#mapStatus');
+    const empty = $('#mapEmpty');
+    const frameWrap = $('#mapFrameWrap');
+    const frame = $('#worldMapFrame');
+    const openLink = $('#mapOpen');
+    const updated = $('#mapUpdated');
+    if (!status || !empty || !frameWrap || !frame || !openLink || !updated) return;
+    status.textContent = 'Verificando mapa…';
+    try {
+      const payload = await api('map-status');
+      if (requestedInstance !== activeInstance) return;
+      if (!payload.available) {
+        status.textContent = 'Esta instância ainda não tem um mapa publicado.';
+        updated.textContent = '';
+        empty.hidden = false;
+        frameWrap.hidden = true;
+        openLink.hidden = true;
+        return;
+      }
+      status.textContent = payload.world_name ? `Instância ${payload.world_name}` : 'Mapa interativo do mundo';
+      updated.textContent = payload.generated_at
+        ? `Snapshot de ${new Date(payload.generated_at).toLocaleString('pt-BR')}`
+        : 'Snapshot disponível';
+      const mapUrl = `map/${encodeURIComponent(requestedInstance)}/?v=${encodeURIComponent(payload.generated_at || 'current')}${reloadFrame ? `&reload=${Date.now()}` : ''}`;
+      if (reloadFrame || !frame.src.endsWith(mapUrl)) frame.src = mapUrl;
+      openLink.href = mapUrl;
+      empty.hidden = true;
+      frameWrap.hidden = false;
+      openLink.hidden = false;
+    } catch (error) {
+      if (requestedInstance !== activeInstance) return;
+      status.textContent = error.status === 401 ? 'Sua sessão expirou.' : `Não foi possível consultar o mapa: ${error.message}`;
+      empty.hidden = false;
+      frameWrap.hidden = true;
+      openLink.hidden = true;
+    }
+  }
+  $('#mapRefresh')?.addEventListener('click', () => loadMapStatus(true));
 
   function propertiesDirty() {
     return !!propertiesRevision && $('#propertiesEditor').value !== propertiesOriginal;
@@ -857,6 +899,7 @@
         propertiesRevision = '';
         propertiesInstance = '';
         if ($('#view-properties')?.classList.contains('active')) loadProperties();
+        if ($('#view-map')?.classList.contains('active')) loadMapStatus(true);
         refreshStatus(false);
         loadPlayerStats();
         if (outputMode === 'feed') loadPlayerEvents(true);

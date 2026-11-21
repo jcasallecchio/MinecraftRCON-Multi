@@ -219,6 +219,23 @@ if ($action === 'instances') {
     json_response(['instances' => bedrock_instance_public_list()]);
 }
 
+if ($action === 'map-status') {
+    reject_method('GET');
+    $instanceId = (string)($_GET['instance_id'] ?? 'main');
+    if (!preg_match('/^[a-z0-9][a-z0-9_-]{0,31}$/', $instanceId) || bedrock_instance_config($instanceId) === null) {
+        json_response(['error' => ['code' => 'invalid_instance', 'message' => 'Instância inválida.']], 400);
+    }
+    $mapDirectory = STORAGE_DIR . DIRECTORY_SEPARATOR . 'maps' . DIRECTORY_SEPARATOR . $instanceId;
+    $manifestPath = $mapDirectory . DIRECTORY_SEPARATOR . 'map-info.json';
+    $manifest = is_file($manifestPath) ? json_decode((string)file_get_contents($manifestPath), true) : null;
+    json_response([
+        'available' => is_file($mapDirectory . DIRECTORY_SEPARATOR . 'index.html'),
+        'instance_id' => $instanceId,
+        'world_name' => is_array($manifest) ? (string)($manifest['world_name'] ?? '') : '',
+        'generated_at' => is_array($manifest) ? (string)($manifest['generated_at'] ?? '') : '',
+    ]);
+}
+
 if ($action === 'history') {
     reject_method('GET');
     $limit = max(1, min(100, (int)($_GET['limit'] ?? 60)));
