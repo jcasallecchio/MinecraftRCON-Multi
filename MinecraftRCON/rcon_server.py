@@ -4,7 +4,10 @@ import json
 import logging
 import os
 import re
+import hashlib
+import stat
 import subprocess
+import tempfile
 import threading
 import time
 import uuid
@@ -18,7 +21,7 @@ from waitress import serve
 from backup_manager import BackupError, create_scheduled_backup, list_scheduled_backups, restore_backup
 
 app = Flask(__name__)
-app.config["MAX_CONTENT_LENGTH"] = 16 * 1024
+app.config["MAX_CONTENT_LENGTH"] = 128 * 1024
 
 SERVER_DIR = Path(os.environ.get("MINECRAFT_SERVER_DIR", "/share/minecraftRCON-Multi/instances/main"))
 LOG_FILE = os.environ.get("RCON_LOG_FILE", str(SERVER_DIR / "rcon_commands.log"))
@@ -88,6 +91,10 @@ def load_options():
 OPTIONS = load_options()
 RCON_TOKEN = load_rcon_token()
 SERVER_OPERATION_LOCK = threading.RLock()
+MANAGED_PROPERTIES = frozenset({
+    "transport", "server-port", "server-portv6", "server-udp-ports",
+    "enable-lan-visibility", "allow-list", "emit-server-telemetry", "level-name",
+})
 RESTORE_REQUEST_LOCK = threading.Lock()
 RATE_LIMIT_LOCK = threading.Lock()
 RATE_BUCKETS = defaultdict(deque)
@@ -652,6 +659,7 @@ def api_info():
         "capabilities": {
             "command_execution": {"method": "POST", "path": "/api/v1/commands", "body": {"command": "string"}},
             "instance_control": {"method": "POST", "path": "/api/v1/control", "actions": ["start", "stop", "restart"]},
+            "server_properties": {"read": "GET /api/v1/server-properties", "save": "PUT /api/v1/server-properties", "save_and_restart": True},
             "telemetry": {"method": "GET", "path": "/api/v1/telemetry", "refresh_seconds": TELEMETRY_INTERVAL_SECONDS},
             "player_events": {"method": "GET", "path": "/api/v1/events", "retention_days": 7},
             "player_statistics": {"method": "GET", "path": "/api/v1/player-stats", "metrics": ["playtime", "sessions", "deaths", "last_seen"]},
@@ -842,6 +850,92 @@ def versioned_player_stats():
     if not authorized():
         return jsonify({"status": "error", "message": "Unauthorized"}), 401
     return jsonify(get_player_stats())
+
+
+def _property_values(content: str) -> dict[str, str]:
+    values = {}
+    for number, line in enumerate(content.splitlines(), 1):
+        stripped = line.strip()
+        if not stripped or stripped.startswith(("#", ";")):
+            continue
+        key, separator, value = line.partition("=")
+        key = key.strip().lower()
+        if not separator or not re.fullmatch(r"[a-z0-9][a-z0-9._-]*", key):
+            raise ValueError(f"Linha {number}: use chave=valor ou um comentário iniciado por #.")
+        if key in values:
+            raise ValueError(f"Linha {number}: a propriedade {key} está duplicada.")
+        values[key] = value.strip()
+    return values
+
+
+@app.route("/api/v1/server-properties", methods=["GET", "PUT"])
+def server_properties():
+    if not authorized():
+        return jsonify({"status": "error", "message": "Unauthorized"}), 401
+    path = SERVER_DIR / "server.properties"
+    with SERVER_OPERATION_LOCK:
+        try:
+            if path.is_symlink():
+                return jsonify({"status": "error", "message": "O arquivo de propriedades não pode ser um link simbólico."}), 400
+            current = path.read_bytes()
+            original = current.decode("utf-8-sig")
+        except (OSError, UnicodeError) as error:
+            return jsonify({"status": "error", "message": f"Não foi possível ler server.properties: {error}"}), 503
+        revision = hashlib.sha256(current).hexdigest()
+        if request.method == "GET":
+            return jsonify({"content": original, "revision": revision, "managed_keys": sorted(MANAGED_PROPERTIES)})
+        data = request.get_json(silent=True)
+        if not isinstance(data, dict) or not isinstance(data.get("content"), str) or not isinstance(data.get("revision"), str):
+            return jsonify({"status": "error", "message": "Envie content e revision em JSON."}), 400
+        if data["revision"] != revision:
+            return jsonify({"status": "error", "message": "O arquivo mudou desde que foi aberto. Recarregue antes de salvar."}), 409
+        proposed = data["content"]
+        if not proposed or len(proposed.encode("utf-8")) > 64 * 1024 or any(
+            ord(char) < 32 and char not in "\r\n\t" or ord(char) == 127 for char in proposed
+        ):
+            return jsonify({"status": "error", "message": "Arquivo vazio, grande demais ou com caracteres de controle."}), 400
+        try:
+            before = _property_values(original)
+            after = _property_values(proposed)
+        except ValueError as error:
+            return jsonify({"status": "error", "message": str(error)}), 400
+        changed_managed = sorted(key for key in MANAGED_PROPERTIES if before.get(key) != after.get(key))
+        if changed_managed:
+            return jsonify({"status": "error", "message": "Altere estas opções na configuração do add-on: " + ", ".join(changed_managed)}), 400
+        restart = data.get("restart") is True
+        if proposed.encode("utf-8") != current:
+            temp_name = None
+            try:
+                with tempfile.NamedTemporaryFile(dir=SERVER_DIR, prefix=".server-properties-", delete=False) as temp:
+                    temp_name = temp.name
+                    temp.write(proposed.encode("utf-8"))
+                    temp.flush()
+                    os.fsync(temp.fileno())
+                os.chmod(temp_name, stat.S_IMODE(path.stat().st_mode))
+                os.replace(temp_name, path)
+            except OSError as error:
+                if temp_name:
+                    try:
+                        os.unlink(temp_name)
+                    except OSError:
+                        pass
+                return jsonify({"status": "error", "message": f"Não foi possível salvar server.properties: {error}"}), 503
+        new_revision = hashlib.sha256(path.read_bytes()).hexdigest()
+        if restart:
+            running = find_screen_session() is not None
+            try:
+                MAINTENANCE_FILE.write_text("restart requested\n", encoding="utf-8")
+                if running and not send_console_command("stop"):
+                    MAINTENANCE_FILE.unlink(missing_ok=True)
+                    return jsonify({"status": "saved", "revision": new_revision, "message": "Arquivo salvo, mas não foi possível reiniciar a instância."})
+                threading.Thread(target=_restart_after_graceful_stop, name=f"restart-{SCREEN_SESSION}", daemon=True).start()
+            except OSError as error:
+                return jsonify({"status": "saved", "revision": new_revision, "message": f"Arquivo salvo, mas falhou ao reiniciar: {error}"})
+        return jsonify({
+            "status": "restarting" if restart else "saved",
+            "revision": new_revision,
+            "message": "Propriedades salvas; instância reiniciando." if restart else "Propriedades salvas. Reinicie a instância para aplicá-las.",
+        }), 202 if restart else 200
 
 
 @app.post("/api/v1/control")

@@ -24,6 +24,11 @@
   let activeInstance = sessionStorage.getItem('minedev-instance') || 'main';
   let pollTimer = null;
   let activityPollTimer = null;
+  let propertiesRevision = '';
+  let propertiesOriginal = '';
+  let propertiesInstance = '';
+  let propertiesBusy = false;
+  let propertiesError = '';
 
   const glossary = [
     { term: 'Alvo', tag: 'Sintaxe', description: 'Jogador, entidade ou seletor escolhido para receber a ação de um comando.' },
@@ -134,15 +139,91 @@
   });
 
   function switchTab(name) {
+    if ($('#view-properties')?.classList.contains('active') && name !== 'properties' && propertiesDirty()) {
+      if (!window.confirm('Há alterações não salvas em server.properties. Descartar?')) return;
+      $('#propertiesEditor').value = propertiesOriginal;
+      updatePropertiesButtons();
+    }
     $$('.tab').forEach(tab => tab.classList.toggle('active', tab.dataset.tab === name));
     $$('.view').forEach(view => view.classList.toggle('active', view.dataset.view === name));
-    const titles = { console: 'Visão geral', stats: 'Estatísticas', commands: 'Referência', history: 'Histórico' };
+    const titles = { console: 'Visão geral', stats: 'Estatísticas', commands: 'Referência', properties: 'Configuração', history: 'Histórico' };
     $('#pageTitle').textContent = titles[name] || 'Visão geral';
     if (name === 'history' && historyRecords.length === 0) loadHistory(true);
     if (name === 'stats') loadPlayerStats();
+    if (name === 'properties' && propertiesInstance !== activeInstance) loadProperties();
     if (name === 'console' && outputMode === 'terminal') $('#commandInput').focus();
   }
   $$('.tab').forEach(tab => tab.addEventListener('click', () => switchTab(tab.dataset.tab)));
+
+  function propertiesDirty() {
+    return !!propertiesRevision && $('#propertiesEditor').value !== propertiesOriginal;
+  }
+  function updatePropertiesButtons() {
+    const ready = !!propertiesRevision && propertiesInstance === activeInstance && !propertiesBusy;
+    $('#propertiesSave').disabled = !ready || !propertiesDirty();
+    $('#propertiesSaveRestart').disabled = !ready;
+    $('#propertiesEditor').disabled = !ready;
+    $('#propertiesHint').textContent = propertiesBusy ? 'Aguarde…' : propertiesError || (propertiesRevision ? propertiesDirty() ? 'Alterações ainda não salvas.' : 'Arquivo sincronizado com o servidor.' : 'Arquivo ainda não carregado.');
+  }
+  async function loadProperties() {
+    const requestedInstance = activeInstance;
+    propertiesBusy = true;
+    propertiesError = '';
+    propertiesRevision = '';
+    propertiesInstance = '';
+    $('#propertiesEditor').disabled = true;
+    $('#propertiesState').textContent = 'Carregando arquivo…';
+    $('#propertiesInstanceName').textContent = $('#instancePicker')?.selectedOptions[0]?.textContent || requestedInstance;
+    updatePropertiesButtons();
+    try {
+      const result = await api('server-properties');
+      if (requestedInstance !== activeInstance) return;
+      propertiesOriginal = result.content;
+      propertiesRevision = result.revision;
+      propertiesInstance = requestedInstance;
+      $('#propertiesEditor').value = result.content;
+      $('#propertiesState').textContent = 'Arquivo carregado';
+    } catch (error) {
+      if (requestedInstance !== activeInstance) return;
+      $('#propertiesState').textContent = 'Arquivo indisponível';
+      propertiesError = error.message;
+      toast(error.message, 'error');
+    } finally {
+      if (requestedInstance === activeInstance) { propertiesBusy = false; updatePropertiesButtons(); }
+    }
+  }
+  $('#propertiesEditor')?.addEventListener('input', updatePropertiesButtons);
+  $('#propertiesReload')?.addEventListener('click', () => {
+    if (propertiesDirty() && !window.confirm('Descartar alterações e recarregar o arquivo?')) return;
+    loadProperties();
+  });
+  async function saveProperties(restart) {
+    if (!propertiesRevision || propertiesBusy || propertiesInstance !== activeInstance) return;
+    if (restart && !window.confirm('Salvar e reiniciar esta instância agora? Jogadores conectados serão desconectados.')) return;
+    const requestedInstance = activeInstance;
+    const content = $('#propertiesEditor').value;
+    propertiesBusy = true;
+    $('#propertiesState').textContent = restart ? 'Salvando e reiniciando…' : 'Salvando…';
+    updatePropertiesButtons();
+    try {
+      const result = await api('server-properties', { method: 'PUT', body: { content, revision: propertiesRevision, restart } });
+      if (requestedInstance !== activeInstance) return;
+      propertiesOriginal = content;
+      propertiesRevision = result.revision;
+      propertiesError = '';
+      $('#propertiesState').textContent = result.status === 'restarting' ? 'Reinício solicitado' : 'Arquivo salvo';
+      toast(result.message || 'Propriedades salvas.', restart && result.status !== 'restarting' ? 'error' : '');
+      if (result.status === 'restarting') window.setTimeout(() => refreshStatus(false), 1500);
+    } catch (error) {
+      if (requestedInstance !== activeInstance) return;
+      $('#propertiesState').textContent = error.status === 409 ? 'Conflito de edição' : 'Falha ao salvar';
+      toast(error.message, 'error');
+    } finally {
+      if (requestedInstance === activeInstance) { propertiesBusy = false; updatePropertiesButtons(); }
+    }
+  }
+  $('#propertiesSave')?.addEventListener('click', () => saveProperties(false));
+  $('#propertiesSaveRestart')?.addEventListener('click', () => saveProperties(true));
 
   function formatUptime(seconds) {
     if (seconds === null || seconds === undefined) return '—';
@@ -695,6 +776,10 @@
       picker.value = activeInstance;
       picker.hidden = instances.length < 2;
       picker.addEventListener('change', () => {
+        if (propertiesDirty() && !window.confirm('Há alterações não salvas em server.properties. Descartar e trocar de instância?')) {
+          picker.value = activeInstance;
+          return;
+        }
         activeInstance = picker.value;
         sessionStorage.setItem('minedev-instance', activeInstance);
         lastTelemetry = null;
@@ -710,6 +795,9 @@
         $('#mobileServerName').textContent = 'Carregando…';
         $('#connectionHint').textContent = `Consultando ${picker.selectedOptions[0]?.textContent || activeInstance}…`;
         renderPlayerStats();
+        propertiesRevision = '';
+        propertiesInstance = '';
+        if ($('#view-properties')?.classList.contains('active')) loadProperties();
         refreshStatus(false);
         if (outputMode === 'feed') loadPlayerEvents(true);
         if ($('#view-stats')?.classList.contains('active')) loadPlayerStats();

@@ -1,5 +1,11 @@
 # Histórico de versões
 
+## 0.3.3 — Edição de server.properties no MineDev
+- Expõe leitura e gravação autenticadas do arquivo de propriedades da instância selecionada.
+- Salva de forma atômica, impede sobrescrita de alterações concorrentes e protege campos controlados pelo add-on.
+- Permite salvar e solicitar reinício gracioso na mesma operação.
+- Amplia o tamanho permitido da requisição para comportar o arquivo completo.
+
 ## 0.3.2 — Detecta conflito com outros serviços na porta do jogo
 - Verifica se TCP e UDP da instância estão disponíveis antes de iniciar o Bedrock.
 - Só declara o servidor pronto após o Bedrock confirmar a abertura da porta e concluir a inicialização.

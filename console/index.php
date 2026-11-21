@@ -22,7 +22,7 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="assets/icon-180.png">
-  <link rel="stylesheet" href="assets/app.css?v=22">
+  <link rel="stylesheet" href="assets/app.css?v=23">
 </head>
 <body class="<?= $isAuthenticated ? 'authenticated' : 'guest' ?>">
   <div class="ambient ambient-one"></div>
@@ -117,6 +117,7 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
           <button class="tab active" data-tab="console" type="button"><span>⌘</span> Console</button>
           <button class="tab" data-tab="stats" type="button"><span>▤</span> Estatísticas</button>
           <button class="tab" data-tab="commands" type="button"><span>⌕</span> Comandos & glossário</button>
+          <button class="tab" data-tab="properties" type="button"><span>⚙</span> Configuração</button>
           <button class="tab" data-tab="history" type="button"><span>◷</span> Histórico <i><?= $LOG_RETENTION_DAYS ?>d</i></button>
         </nav>
 
@@ -137,6 +138,17 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
               <kbd class="enter-hint">ENTER</kbd><button type="submit" class="send-button" id="sendButton" aria-label="Enviar comando" disabled>↑</button>
             </form>
             <div class="terminal-footer"><span><kbd>↑</kbd><kbd>↓</kbd> navegar no histórico local</span><span id="connectionHint">Configure BEDROCK_API_TOKEN no .env</span></div>
+          </div>
+        </section>
+
+        <section class="view" id="view-properties" data-view="properties">
+          <div class="section-intro"><div><div class="eyebrow">INSTÂNCIA SELECIONADA · SERVER.PROPERTIES</div><h2>Configuração do servidor</h2><p>Edite as opções deste mundo. As alterações entram em vigor após reiniciar a instância.</p></div></div>
+          <div class="properties-card">
+            <div class="properties-toolbar"><div><strong id="propertiesInstanceName">Carregando…</strong><small id="propertiesState">Aguardando arquivo</small></div><button class="ghost-button" type="button" id="propertiesReload">Recarregar arquivo</button></div>
+            <p class="properties-note">Portas, transporte, nome do mundo, allowlist e telemetria são definidos pelo add-on. Altere esses campos nas configurações do add-on.</p>
+            <label class="properties-label" for="propertiesEditor">Conteúdo de server.properties</label>
+            <textarea id="propertiesEditor" class="properties-editor" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Editar server.properties da instância selecionada" disabled></textarea>
+            <div class="properties-actions"><span id="propertiesHint">Selecione uma instância para carregar.</span><button class="button secondary" type="button" id="propertiesSave" disabled>Salvar</button><button class="button primary" type="button" id="propertiesSaveRestart" disabled>Salvar e reiniciar</button></div>
           </div>
         </section>
 
@@ -169,6 +181,6 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
     </div>
   </div>
   <div class="toast-region" id="toastRegion" aria-live="polite"></div>
-  <script src="assets/app.js?v=17" defer></script>
+  <script src="assets/app.js?v=18" defer></script>
 </body>
 </html>

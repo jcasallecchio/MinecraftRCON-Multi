@@ -184,6 +184,36 @@ if ($action === 'control') {
     json_response($result['data']);
 }
 
+if ($action === 'server-properties') {
+    if (!in_array($method, ['GET', 'PUT'], true)) {
+        header('Allow: GET, PUT');
+        json_response(['error' => ['code' => 'method_not_allowed', 'message' => 'Método não permitido.']], 405);
+    }
+    $instanceId = (string)($_GET['instance_id'] ?? 'main');
+    $payload = null;
+    if ($method === 'PUT') {
+        $input = read_payload();
+        $content = $input['content'] ?? null;
+        $revision = $input['revision'] ?? null;
+        if (!is_string($content) || !is_string($revision) || strlen($content) > 65536) {
+            json_response(['error' => ['code' => 'invalid_properties', 'message' => 'Arquivo de propriedades inválido ou grande demais.']], 400);
+        }
+        $payload = ['content' => $content, 'revision' => $revision, 'restart' => ($input['restart'] ?? false) === true];
+    }
+    $result = bedrock_request('/api/v1/server-properties', $method, $payload, $instanceId);
+    if (!$result['ok']) {
+        if ($method === 'PUT') audit_event(authenticated_actor(), 'properties_save', '', 'failed', 'Instância ' . $instanceId . ': ' . (string)$result['error']);
+        if ($result['http_status'] === 409) {
+            json_response(['error' => ['code' => 'properties_conflict', 'message' => (string)$result['error']]], 409);
+        }
+        bedrock_failure($result);
+    }
+    if ($method === 'PUT') {
+        audit_event(authenticated_actor(), 'properties_save', '', 'success', 'Instância ' . $instanceId . (!empty($payload['restart']) ? '; reinício solicitado' : ''));
+    }
+    json_response($result['data']);
+}
+
 if ($action === 'instances') {
     reject_method('GET');
     json_response(['instances' => bedrock_instance_public_list()]);

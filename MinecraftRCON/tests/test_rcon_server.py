@@ -107,6 +107,48 @@ class RconServerTests(unittest.TestCase):
             self.assertTrue(service.request_rate_allowed("192.168.1.4"))
         self.assertFalse(service.request_rate_allowed("192.168.1.4"))
 
+    def test_server_properties_save_checks_revision_and_managed_keys(self):
+        path = service.SERVER_DIR / "server.properties"
+        path.write_text("level-name=Abydos\nserver-port=19132\nmax-players=10\n", encoding="utf-8")
+        headers = {"Authorization": f"Bearer {service.RCON_TOKEN}"}
+        client = {"headers": headers, "environ_base": {"REMOTE_ADDR": "192.168.1.10"}}
+        loaded = self.client.get("/api/v1/server-properties", **client)
+        self.assertEqual(loaded.status_code, 200)
+        revision = loaded.get_json()["revision"]
+        modified = "level-name=Abydos\nserver-port=19132\nmax-players=12\n"
+        saved = self.client.put("/api/v1/server-properties", json={"content": modified, "revision": revision}, **client)
+        self.assertEqual(saved.status_code, 200)
+        self.assertEqual(path.read_text(encoding="utf-8"), modified)
+        conflict = self.client.put("/api/v1/server-properties", json={"content": modified, "revision": revision}, **client)
+        self.assertEqual(conflict.status_code, 409)
+        rejected = self.client.put(
+            "/api/v1/server-properties",
+            json={"content": modified.replace("server-port=19132", "server-port=19134"), "revision": saved.get_json()["revision"]},
+            **client,
+        )
+        self.assertEqual(rejected.status_code, 400)
+        self.assertEqual(path.read_text(encoding="utf-8"), modified)
+
+    def test_server_properties_save_and_restart_requests_graceful_stop(self):
+        path = service.SERVER_DIR / "server.properties"
+        path.write_text("level-name=Abydos\nmax-players=10\n", encoding="utf-8")
+        headers = {"Authorization": f"Bearer {service.RCON_TOKEN}"}
+        client = {"headers": headers, "environ_base": {"REMOTE_ADDR": "192.168.1.10"}}
+        revision = self.client.get("/api/v1/server-properties", **client).get_json()["revision"]
+        with patch.object(service, "find_screen_session", return_value="bedrock_main"), patch.object(
+            service, "send_console_command", return_value=True
+        ) as command, patch.object(service.threading, "Thread") as worker:
+            response = self.client.put(
+                "/api/v1/server-properties",
+                json={"content": "level-name=Abydos\nmax-players=14\n", "revision": revision, "restart": True},
+                **client,
+            )
+        self.assertEqual(response.status_code, 202)
+        command.assert_called_once_with("stop")
+        worker.return_value.start.assert_called_once()
+        self.assertEqual(path.read_text(encoding="utf-8").splitlines()[-1], "max-players=14")
+        service.MAINTENANCE_FILE.unlink(missing_ok=True)
+
     def test_backup_refuses_live_snapshot_without_cheats(self):
         (service.SERVER_DIR / "server.properties").write_text("allow-cheats=false\n", encoding="utf-8")
         with self.assertRaises(service.BackupError):
