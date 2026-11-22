@@ -12,12 +12,24 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
     strip /usr/local/bin/minedev-seed-tile && \
     rm -rf /var/lib/apt/lists/* /tmp/cubiomes /tmp/cubiomes.tar.gz /tmp/seed_tile.c
 
+FROM golang:1.26-bookworm AS feature-builder
+WORKDIR /src
+COPY go.mod seed_feature_tile.go ./
+RUN go mod download && \
+    go build -trimpath -ldflags="-s -w" -o /usr/local/bin/minedev-seed-features ./seed_feature_tile.go && \
+    helix_data_dir="$(go list -m -f '{{.Dir}}' github.com/helix-bedrock/helix-data)" && \
+    mkdir -p /tmp/helix-notices/worldgen /tmp/helix-notices/helix-data /tmp/minedev-seed-data && \
+    cp "$helix_data_dir/LICENSE" "$helix_data_dir/ADDITIONAL-PERMISSIONS.md" "$helix_data_dir/NOTICE.md" /tmp/helix-notices/helix-data/ && \
+    worldgen_dir="$(go list -m -f '{{.Dir}}' github.com/helix-bedrock/worldgen)" && \
+    cp "$worldgen_dir/overworld/testdata/block_types.json" /tmp/minedev-seed-data/block_types.json && \
+    cp "$worldgen_dir/LICENSE" "$worldgen_dir/ADDITIONAL-PERMISSIONS.md" "$worldgen_dir/NOTICE.md" /tmp/helix-notices/worldgen/
+
 FROM python:3.11-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     unzip curl screen psmisc ca-certificates && \
     apt-get clean && rm -rf /var/lib/apt/lists/* && \
-    mkdir -p /usr/share/licenses/cubiomes-bedrock
+    mkdir -p /usr/share/licenses/cubiomes-bedrock /usr/share/licenses/helix-bedrock /usr/share/minedev-seed
 
 COPY requirements.txt /requirements.txt
 RUN python -m pip install --no-cache-dir -r /requirements.txt
@@ -28,6 +40,9 @@ COPY update_transaction.py /update_transaction.py
 COPY seed_tile_worker.py /seed_tile_worker.py
 COPY --from=seed-builder /usr/local/bin/minedev-seed-tile /usr/local/bin/minedev-seed-tile
 COPY --from=seed-builder /tmp/CUBIOMES_LICENSE.txt /usr/share/licenses/cubiomes-bedrock/LICENSE
+COPY --from=feature-builder /usr/local/bin/minedev-seed-features /usr/local/bin/minedev-seed-features
+COPY --from=feature-builder /tmp/helix-notices/ /usr/share/licenses/helix-bedrock/
+COPY --from=feature-builder /tmp/minedev-seed-data/block_types.json /usr/share/minedev-seed/block_types.json
 COPY run.sh /run.sh
 COPY instance.sh /instance.sh
 RUN chmod +x /run.sh /instance.sh

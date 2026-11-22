@@ -254,16 +254,18 @@
     wanted.sort((a, b) => a.distance - b.distance);
     const viewportLimited = wanted.length > 16;
     const includeDungeons = ['dungeon_zombie', 'dungeon_skeleton', 'dungeon_spider'].some((type) => enabledTypes.has(type));
+    const includeFeatures = ['fossil', 'cave', 'ore_vein'].some((type) => enabledTypes.has(type));
     await Promise.all(wanted.slice(0, 16).map(async ({ x, z }) => {
-      const key = `${x}_${z}`;
+      const tile = `${x}_${z}`;
+      const key = `${tile}:d${includeDungeons ? 1 : 0}:f${includeFeatures ? 1 : 0}`;
       if (seedTiles.has(key) || pendingSeedTiles.has(key)) return;
       pendingSeedTiles.add(key);
       try {
         let data = null;
         for (let attempt = 0; attempt < 360; attempt++) {
-          const response = await fetch(`../../api.php?action=seed-tile&instance_id=${encodeURIComponent(instanceId)}&x=${x}&z=${z}&dungeons=${includeDungeons ? '1' : '0'}`, { credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' } });
+          const response = await fetch(`../../api.php?action=seed-tile&instance_id=${encodeURIComponent(instanceId)}&x=${x}&z=${z}&dungeons=${includeDungeons ? '1' : '0'}&features=${includeFeatures ? '1' : '0'}`, { credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' } });
           if (response.status === 202) {
-            if (attempt === 0) $('.minedev-seed-visible').textContent = 'Calculando os setores visíveis…';
+            if (attempt === 0) $('.minedev-seed-visible').textContent = includeFeatures ? 'Calculando cavernas, fósseis e veios nos setores visíveis pelo Home Assistant…' : 'Calculando os setores visíveis…';
             await new Promise((resolve) => window.setTimeout(resolve, Math.max(1000, Number(response.headers.get('Retry-After') || 5) * 1000)));
             continue;
           }
@@ -271,10 +273,10 @@
           data = await response.json();
           break;
         }
-        if (!data) throw new Error(`O cálculo do setor ${key} ainda está em andamento; mova o mapa para tentar novamente.`);
+        if (!data) throw new Error(`O cálculo do setor ${tile} ainda está em andamento; mova o mapa para tentar novamente.`);
         if (data.revision !== seedTileRevision || data.instance_id !== instanceId || !Array.isArray(data.points)) throw new Error('Setor da seed inválido.');
         seedTiles.set(key, data.points.filter((item) => typeof item.type === 'string' && typeof item.name === 'string' && Number.isFinite(item.x) && Number.isFinite(item.z)));
-        if (seedTiles.size > 64) seedTiles.delete(seedTiles.keys().next().value);
+        if (seedTiles.size > 192) seedTiles.delete(seedTiles.keys().next().value);
       } catch (error) { $('.minedev-seed-visible').textContent = error.message; }
       finally { pendingSeedTiles.delete(key); }
     }));
@@ -349,6 +351,7 @@
       const counts = new Map(Object.entries(data.structure_counts || {}));
       if (!counts.size) for (const item of seedStructures) counts.set(item.type, (counts.get(item.type) || 0) + 1);
       const available = new Set(Array.isArray(data.types) ? data.types.map((item) => item.type) : seedStructures.map((item) => item.type));
+      const generatedByTile = new Set(['fossil', 'cave', 'ore_vein']);
       const typeList = $('.minedev-seed-type-list');
       const dungeonRadius = Number.isInteger(data.dungeon_coverage?.radius) ? data.dungeon_coverage.radius : 0;
       const dungeonTypes = ['dungeon_zombie', 'dungeon_skeleton', 'dungeon_spider'];
@@ -359,7 +362,7 @@
         if (type) input.dataset.type = type;
         const [color, icon] = seedMarkerStyles[type] || ['#f4c46f', label.slice(0, 1).toUpperCase()];
         const badge = document.createElement('i'); badge.className = 'minedev-seed-type-icon'; badge.style.setProperty('--seed-marker-color', color); badge.textContent = icon;
-        const text = document.createElement('span'); text.textContent = supported ? `${label} (${Number(count).toLocaleString('pt-BR')})` : `${label} · sem cálculo`;
+        const text = document.createElement('span'); text.textContent = !supported ? `${label} · sem cálculo` : generatedByTile.has(type) ? `${label} · por setor` : `${label} (${Number(count).toLocaleString('pt-BR')})`;
         row.append(input, badge, text); parent.append(row);
         return input;
       };

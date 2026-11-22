@@ -387,6 +387,15 @@ if ($action === 'seed-layer') {
         json_response(['error' => ['code' => 'seed_layer_invalid', 'message' => 'Arquivo da seed inválido.']], 500);
     }
     $data['image_url'] = '../../seed_asset.php?instance_id=' . rawurlencode($instanceId) . '&revision=' . $revision;
+    foreach ([
+        ['type' => 'fossil', 'name' => 'Fóssil'],
+        ['type' => 'cave', 'name' => 'Caverna'],
+        ['type' => 'ore_vein', 'name' => 'Veio de minério'],
+    ] as $featureType) {
+        if (!in_array($featureType['type'], array_column($data['types'] ?? [], 'type'), true)) {
+            $data['types'][] = $featureType;
+        }
+    }
     $slimeRevision = (string)($data['slime_revision'] ?? '');
     if (preg_match('/^[a-f0-9]{24}$/', $slimeRevision)) {
         $data['slime_url'] = '../../seed_asset.php?instance_id=' . rawurlencode($instanceId) . '&revision=' . $slimeRevision . '&kind=slime';
@@ -412,19 +421,21 @@ if ($action === 'seed-tile') {
     }
     $path = STORAGE_DIR . DIRECTORY_SEPARATOR . 'seed-tiles-' . $instanceId . '-' . $revision . DIRECTORY_SEPARATOR . $tileX . '_' . $tileZ . '.json';
     $wantDungeons = (string)($_GET['dungeons'] ?? '') === '1';
+    $wantFeatures = (string)($_GET['features'] ?? '') === '1';
     $dungeonPath = STORAGE_DIR . DIRECTORY_SEPARATOR . 'seed-dungeons-' . $instanceId . '-' . $revision . DIRECTORY_SEPARATOR . $tileX . '_' . $tileZ . '.json';
-    if (!is_file($path) || ($wantDungeons && !is_file($dungeonPath))) {
+    $featurePath = STORAGE_DIR . DIRECTORY_SEPARATOR . 'seed-features-' . $instanceId . '-' . $revision . DIRECTORY_SEPARATOR . $tileX . '_' . $tileZ . '.json';
+    if (!is_file($path) || ($wantDungeons && !is_file($dungeonPath)) || ($wantFeatures && !is_file($featurePath))) {
         $queue = STORAGE_DIR . DIRECTORY_SEPARATOR . 'seed-jobs';
         if (!is_dir($queue) && !mkdir($queue, 0700, true) && !is_dir($queue)) {
             json_response(['error' => ['code' => 'seed_worker_unavailable', 'message' => 'Não foi possível criar a fila de cálculo.']], 503);
         }
-        $jobId = hash('sha256', $instanceId . ':' . $revision . ':' . $tileX . ':' . $tileZ . ':' . ($wantDungeons ? 'dungeons' : 'structures'));
+        $jobId = hash('sha256', $instanceId . ':' . $revision . ':' . $tileX . ':' . $tileZ . ':' . ($wantDungeons ? 'd' : '-') . ':' . ($wantFeatures ? 'f' : '-'));
         $jobPath = $queue . DIRECTORY_SEPARATOR . $jobId . '.json';
-        with_storage_lock(static function () use ($jobPath, $instanceId, $revision, $tileX, $tileZ, $wantDungeons): void {
+        with_storage_lock(static function () use ($jobPath, $instanceId, $revision, $tileX, $tileZ, $wantDungeons, $wantFeatures): void {
             if (is_file($jobPath)) return;
             $temp = $jobPath . '.' . bin2hex(random_bytes(6)) . '.tmp';
             $job = ['instance_id' => $instanceId, 'revision' => $revision, 'x' => $tileX, 'z' => $tileZ,
-                'dungeons' => $wantDungeons, 'created_at' => time(), 'status' => 'queued'];
+                'dungeons' => $wantDungeons, 'features' => $wantFeatures, 'created_at' => time(), 'status' => 'queued'];
             if (file_put_contents($temp, json_encode($job, JSON_UNESCAPED_SLASHES), LOCK_EX) === false || !rename($temp, $jobPath)) {
                 @unlink($temp);
                 throw new RuntimeException('Não foi possível enfileirar o cálculo do setor.');
@@ -441,6 +452,11 @@ if ($action === 'seed-tile') {
         $dungeons = json_decode((string)file_get_contents($dungeonPath), true);
         if (!is_array($dungeons)) json_response(['error' => ['code' => 'seed_dungeon_tile_invalid', 'message' => 'Masmorras do setor inválidas.']], 500);
         $points = array_merge($points, $dungeons);
+    }
+    if ($wantFeatures) {
+        $features = json_decode((string)file_get_contents($featurePath), true);
+        if (!is_array($features)) json_response(['error' => ['code' => 'seed_feature_tile_invalid', 'message' => 'Recursos do setor inválidos.']], 500);
+        $points = array_merge($points, $features);
     }
     json_response(['instance_id' => $instanceId, 'revision' => $revision, 'x' => $tileX, 'z' => $tileZ,
         'status' => 'ready', 'points' => $points]);

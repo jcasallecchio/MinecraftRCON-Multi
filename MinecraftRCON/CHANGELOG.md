@@ -1,5 +1,11 @@
 # Histórico de versões
 
+## 0.3.8 — Camadas de cavernas, fósseis e veios
+- Calcula cavernas, fósseis e veios de cobre/ferro por setor dentro do Home Assistant, sob demanda.
+- Usa um gerador Bedrock adicional fixado em revisão e mantém o worker sem executar cálculos no navegador ou no PC.
+- Publica os três tipos no catálogo do MineDev e os combina com as estruturas e masmorras já existentes.
+- Inclui no add-on as licenças e permissões do motor Helix usado para essas camadas.
+
 ## 0.3.7 — Worker de setores executado no Home Assistant
 - Processa setores de estruturas e masmorras na fila privada do MineDev dentro do add-on; o navegador e os PCs não executam os cálculos.
 - Compila o gerador contra uma revisão fixa do cubiomes-bedrock durante a construção da imagem do add-on.

@@ -75,7 +75,25 @@ def recover_interrupted_jobs(queue: Path) -> None:
             LOG.warning("Não foi possível recuperar %s: %s", claimed.name, exc)
 
 
-def process_job(job_path: Path, storage: Path, binary: Path) -> None:
+def generate_features(binary: Path, seed: str, tile_x: int, tile_z: int) -> list[dict]:
+    with tempfile.TemporaryDirectory(prefix="minedev-features-") as temporary_dir:
+        output = Path(temporary_dir) / "features.json"
+        subprocess.run([str(binary), seed, str(tile_x), str(tile_z), str(output)],
+                       check=True, timeout=3600, stdout=subprocess.DEVNULL)
+        with output.open("r", encoding="utf-8") as stream:
+            points = json.load(stream)
+    if not isinstance(points, list) or len(points) > 100_000:
+        raise ValueError("O gerador Bedrock retornou uma lista de recursos inválida.")
+    allowed = {"fossil", "cave", "ore_vein"}
+    for point in points:
+        if (not isinstance(point, dict) or point.get("type") not in allowed or
+                not isinstance(point.get("name"), str) or
+                not all(isinstance(point.get(axis), int) for axis in ("x", "y", "z"))):
+            raise ValueError("O gerador Bedrock retornou um recurso inválido.")
+    return points
+
+
+def process_job(job_path: Path, storage: Path, binary: Path, feature_binary: Path) -> None:
     claimed = job_path.with_name(job_path.name + ".working")
     try:
         os.replace(job_path, claimed)
@@ -90,11 +108,12 @@ def process_job(job_path: Path, storage: Path, binary: Path) -> None:
         revision = job.get("revision")
         tile_x, tile_z = job.get("x"), job.get("z")
         wants_dungeons = job.get("dungeons", False)
+        wants_features = job.get("features", False)
         if (not isinstance(instance_id, str) or not INSTANCE_RE.fullmatch(instance_id) or
                 not isinstance(revision, str) or not REVISION_RE.fullmatch(revision) or
                 isinstance(tile_x, bool) or not isinstance(tile_x, int) or not -16 <= tile_x <= 15 or
                 isinstance(tile_z, bool) or not isinstance(tile_z, int) or not -16 <= tile_z <= 15 or
-                not isinstance(wants_dungeons, bool)):
+                not isinstance(wants_dungeons, bool) or not isinstance(wants_features, bool)):
             raise ValueError("Parâmetros do setor inválidos.")
 
         metadata_path = storage / f"seed-layer-{instance_id}.json"
@@ -114,14 +133,18 @@ def process_job(job_path: Path, storage: Path, binary: Path) -> None:
 
         base_path = storage / f"seed-tiles-{instance_id}-{revision}" / f"{tile_x}_{tile_z}.json"
         dungeon_path = storage / f"seed-dungeons-{instance_id}-{revision}" / f"{tile_x}_{tile_z}.json"
+        feature_path = storage / f"seed-features-{instance_id}-{revision}" / f"{tile_x}_{tile_z}.json"
         if not base_path.is_file():
             points = generate(binary, seed, radius, tile_x, tile_z, dungeons=False)
             atomic_json(base_path, points)
         if wants_dungeons and not dungeon_path.is_file():
             points = generate(binary, seed, radius, tile_x, tile_z, dungeons=True)
             atomic_json(dungeon_path, points)
+        if wants_features and not feature_path.is_file():
+            points = generate_features(feature_binary, seed, tile_x, tile_z)
+            atomic_json(feature_path, points)
         claimed.unlink(missing_ok=True)
-        LOG.info("Setor pronto: instância=%s x=%s z=%s masmorras=%s", instance_id, tile_x, tile_z, wants_dungeons)
+        LOG.info("Setor pronto: instância=%s x=%s z=%s masmorras=%s recursos=%s", instance_id, tile_x, tile_z, wants_dungeons, wants_features)
     except Exception as exc:  # a bad job must not stop Bedrock or the rest of the queue
         failed = claimed.with_name(claimed.name + ".failed")
         try:
@@ -135,11 +158,15 @@ def main() -> int:
     logging.basicConfig(level=logging.INFO, format="[%(asctime)s] [seed-worker] %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
     storage = Path(os.environ.get("MINDEV_SEED_STORAGE", "/share/htdocs/minedev/storage")).resolve()
     binary = Path(os.environ.get("MINDEV_SEED_BINARY", "/usr/local/bin/minedev-seed-tile"))
+    feature_binary = Path(os.environ.get("MINDEV_SEED_FEATURE_BINARY", "/usr/local/bin/minedev-seed-features"))
     if not storage.is_dir():
         LOG.error("Pasta do MineDev não encontrada: %s", storage)
         return 1
     if not binary.is_file() or not os.access(binary, os.X_OK):
         LOG.error("Gerador de setores não está instalado: %s", binary)
+        return 1
+    if not feature_binary.is_file() or not os.access(feature_binary, os.X_OK):
+        LOG.error("Gerador de recursos Bedrock não está instalado: %s", feature_binary)
         return 1
     queue = storage / "seed-jobs"
     queue.mkdir(mode=0o700, parents=True, exist_ok=True)
@@ -150,7 +177,7 @@ def main() -> int:
     while not stop_event.is_set():
         jobs = sorted(queue.glob("*.json"), key=lambda path: path.stat().st_mtime)
         if jobs:
-            process_job(jobs[0], storage, binary)
+            process_job(jobs[0], storage, binary, feature_binary)
         else:
             stop_event.wait(2)
     return 0

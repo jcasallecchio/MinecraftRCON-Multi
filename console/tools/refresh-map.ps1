@@ -187,7 +187,7 @@ try {
     $indexPath = Join-Path $stagePath 'index.html'
     $mapHtml = [System.IO.File]::ReadAllText($indexPath)
     if (-not $mapHtml.Contains('</body>')) { throw 'O exportador mudou o HTML do mapa; a integração não foi instalada.' }
-    $mapHtml = $mapHtml.Replace('</body>', "    <script src=`"minedev-map-bridge.js?v=22`"></script>`r`n</body>")
+    $mapHtml = $mapHtml.Replace('</body>', "    <script src=`"minedev-map-bridge.js?v=23`"></script>`r`n</body>")
     $utf8WithoutBom = [System.Text.UTF8Encoding]::new($false)
     [System.IO.File]::WriteAllText($indexPath, $mapHtml, $utf8WithoutBom)
 
