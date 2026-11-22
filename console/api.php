@@ -370,17 +370,22 @@ if ($action === 'seed-tile') {
         }
         $jobId = hash('sha256', $instanceId . ':' . $revision . ':' . $tileX . ':' . $tileZ . ':' . ($wantDungeons ? 'd' : '-') . ':' . ($wantFeatures ? 'f' : '-'));
         $jobPath = $queue . DIRECTORY_SEPARATOR . $jobId . '.json';
-        with_storage_lock(static function () use ($jobPath, $instanceId, $revision, $tileX, $tileZ, $wantDungeons, $wantFeatures): void {
-            if (is_file($jobPath)) return;
-            $temp = $jobPath . '.' . bin2hex(random_bytes(6)) . '.tmp';
-            $job = ['instance_id' => $instanceId, 'revision' => $revision, 'x' => $tileX, 'z' => $tileZ,
-                'dungeons' => $wantDungeons, 'features' => $wantFeatures, 'created_at' => time(), 'status' => 'queued'];
-            if (file_put_contents($temp, json_encode($job, JSON_UNESCAPED_SLASHES), LOCK_EX) === false || !rename($temp, $jobPath)) {
-                @unlink($temp);
-                throw new RuntimeException('Não foi possível enfileirar o cálculo do setor.');
-            }
-            @chmod($jobPath, 0600);
-        });
+        try {
+            with_storage_lock(static function () use ($jobPath, $instanceId, $revision, $tileX, $tileZ, $wantDungeons, $wantFeatures): void {
+                if (is_file($jobPath)) return;
+                $temp = $jobPath . '.' . bin2hex(random_bytes(6)) . '.tmp';
+                $job = ['instance_id' => $instanceId, 'revision' => $revision, 'x' => $tileX, 'z' => $tileZ,
+                    'dungeons' => $wantDungeons, 'features' => $wantFeatures, 'created_at' => time(), 'status' => 'queued'];
+                if (file_put_contents($temp, json_encode($job, JSON_UNESCAPED_SLASHES), LOCK_EX) === false || !rename($temp, $jobPath)) {
+                    @unlink($temp);
+                    throw new RuntimeException('Não foi possível enfileirar o cálculo do setor.');
+                }
+                @chmod($jobPath, 0600);
+            });
+        } catch (Throwable $error) {
+            error_log('Falha ao enfileirar cálculo de setor: ' . $error->getMessage());
+            json_response(['error' => ['code' => 'seed_job_write_failed', 'message' => 'Não foi possível gravar na fila do cálculo. Verifique as permissões de storage/seed-jobs.']], 503);
+        }
         header('Retry-After: 5');
         json_response(['instance_id' => $instanceId, 'revision' => $revision, 'x' => $tileX, 'z' => $tileZ,
             'status' => 'queued', 'points' => []], 202);

@@ -171,7 +171,10 @@ def main() -> int:
         if stop_event.wait(10):
             return 0
     queue = storage / "seed-jobs"
-    queue.mkdir(mode=0o700, parents=True, exist_ok=True)
+    while not queue.is_dir():
+        LOG.info("Aguardando o MineDev Web preparar storage/seed-jobs com as permissões do PHP.")
+        if stop_event.wait(5):
+            return 0
     recover_interrupted_jobs(queue)
     signal.signal(signal.SIGTERM, stop_worker)
     signal.signal(signal.SIGINT, stop_worker)

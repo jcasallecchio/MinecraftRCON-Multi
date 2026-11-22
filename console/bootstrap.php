@@ -49,6 +49,20 @@ if (!is_dir(STORAGE_DIR) && !mkdir(STORAGE_DIR, 0700, true) && !is_dir(STORAGE_D
     throw new RuntimeException('Não foi possível criar a pasta privada storage/.');
 }
 @chmod(STORAGE_DIR, 0700);
+$seedJobQueue = STORAGE_DIR . DIRECTORY_SEPARATOR . 'seed-jobs';
+if (is_dir($seedJobQueue) && !is_writable($seedJobQueue)) {
+    $entries = @scandir($seedJobQueue);
+    $unexpectedEntries = is_array($entries) ? array_diff($entries, ['.', '..', '.worker.lock']) : ['unreadable'];
+    if (!$unexpectedEntries) {
+        $backup = $seedJobQueue . '.permission-backup-' . gmdate('Ymd-His');
+        if (@rename($seedJobQueue, $backup)) {
+            error_log('MineDev arquivou uma fila de setores sem permissão de escrita para o PHP.');
+        }
+    }
+}
+if (!is_dir($seedJobQueue) && !@mkdir($seedJobQueue, 0700, true) && !is_dir($seedJobQueue)) {
+    error_log('MineDev não conseguiu preparar storage/seed-jobs para o worker de setores.');
+}
 $isHttps = (!empty($_SERVER['HTTPS']) && strtolower((string)$_SERVER['HTTPS']) !== 'off');
 session_name('MINEDSESSID');
 session_set_cookie_params([

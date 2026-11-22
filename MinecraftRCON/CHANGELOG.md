@@ -1,5 +1,9 @@
 # Histórico de versões
 
+## 0.4.1 — Corrige permissões da fila do mapa
+- O worker aguarda a fila `storage/seed-jobs` ser criada pelo MineDev Web, evitando criá-la como root e bloquear gravações do PHP.
+- Preserva o processamento de setores no Home Assistant e retorna um erro controlado se o PHP não conseguir enfileirar o trabalho.
+
 ## 0.4.0 — Preparação inicial da seed no Home Assistant
 - Inclui no add-on o gerador de biomas e slime chunks e o publicador do manifesto para instalações novas do MineDev.
 - Permite gerar a camada inicial pelo terminal do Home Assistant; estruturas e masmorras restantes seguem calculadas por setor pelo worker.

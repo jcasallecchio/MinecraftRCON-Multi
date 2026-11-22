@@ -11,7 +11,7 @@
   window.MineDevMap = Object.freeze({ map, gameToMap, mapToGame, centerAt(x, z) { unmined.center([Number(x), Number(z)]); } });
   const css = document.createElement('link');
   css.rel = 'stylesheet';
-  css.href = 'minedev-map-bridge.css?v=29';
+  css.href = 'minedev-map-bridge.css?v=30';
   document.head.append(css);
 
   const panel = document.createElement('section');
@@ -36,7 +36,7 @@
   const structureModal = document.createElement('dialog');
   structureModal.className = 'minedev-structure-modal';
   structureModal.setAttribute('aria-labelledby', 'minedev-structure-title');
-  structureModal.innerHTML = '<header class="minedev-structure-modal-head"><div><strong id="minedev-structure-title">Locais e estruturas</strong><small>Toque nos ícones para exibir ou ocultar</small></div><button type="button" class="minedev-structure-close" aria-label="Fechar">×</button></header><p class="minedev-structure-status">Carregando estruturas…</p><div class="minedev-structure-grid" role="group" aria-label="Filtros de estruturas"></div>';
+  structureModal.innerHTML = '<header class="minedev-structure-modal-head"><strong id="minedev-structure-title">Locais e estruturas</strong><button type="button" class="minedev-structure-close" aria-label="Fechar">×</button></header><p class="minedev-structure-status" hidden></p><div class="minedev-structure-grid" role="group" aria-label="Filtros de estruturas"></div>';
   document.body.append(structureModal);
   const structureGrid = structureModal.querySelector('.minedev-structure-grid');
   const structureStatus = structureModal.querySelector('.minedev-structure-status');
@@ -259,7 +259,11 @@
             await new Promise((resolve) => window.setTimeout(resolve, Math.max(1000, Number(response.headers.get('Retry-After') || 5) * 1000)));
             continue;
           }
-          if (!response.ok) throw new Error(`Setor ${key}: HTTP ${response.status}`);
+          if (!response.ok) {
+            let detail = '';
+            try { const failure = await response.json(); detail = failure.error?.message || ''; } catch (_) { /* resposta não JSON */ }
+            throw new Error(`Setor ${key}: HTTP ${response.status}${detail ? ` · ${detail}` : ''}`);
+          }
           data = await response.json();
           break;
         }
@@ -370,13 +374,11 @@
         });
         structureGrid.append(button);
       }
-      structureStatus.textContent = `${seedCatalog.length} filtros · desligados por padrão`;
       renderSeedStructures();
       map.on('moveend', () => { if (seedTileRevision && enabledTypes.size) loadSeedTiles(); else renderSeedStructures(); });
-      const total = Number(data.structure_total ?? seedStructures.length);
-      status.textContent = `${total.toLocaleString('pt-BR')} locais · ${data.biomes?.length || 0} biomas · Bedrock ${seedGeneratorVersion}`;
-      structureStatus.textContent = `${seedCatalog.length} tipos · ${total.toLocaleString('pt-BR')} locais calculados`;
-    } catch (error) { status.textContent = error.message; }
+      structureStatus.textContent = '';
+      structureStatus.hidden = true;
+    } catch (error) { status.textContent = error.message; status.hidden = false; }
   }
   $('.minedev-map-go').addEventListener('submit', (event) => { event.preventDefault(); const point = parseCoordinates(coordinateInput.value); if (!point) return notify('Informe X e Z válidos, separados por vírgula ou espaço.', true); go(point); notify('Mapa centralizado nas coordenadas informadas.'); });
   $('.minedev-map-collapse').addEventListener('click', (event) => { panel.classList.toggle('collapsed'); const expanded = !panel.classList.contains('collapsed'); event.currentTarget.setAttribute('aria-expanded', String(expanded)); event.currentTarget.setAttribute('aria-label', expanded ? 'Recolher ferramentas' : 'Expandir ferramentas'); event.currentTarget.textContent = expanded ? '−' : '+'; });
