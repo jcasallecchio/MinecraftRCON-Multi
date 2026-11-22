@@ -1,6 +1,6 @@
 {
   "name": "MinecraftRCON Multi",
-  "version": "0.3.6",
+  "version": "0.3.7",
   "slug": "minecraft_rcon_multi",
   "description": "Gerenciador de até cinco servidores Minecraft Bedrock simultâneos com RCON",
   "startup": "services",
@@ -72,6 +72,8 @@
     "public_hostname": "str?",
     "backup_interval_hours": "int?",
     "backup_keep_count": "int?",
+    "seed_worker_enabled": "bool?",
+    "seed_storage_path": "str?",
     "instances": [
       {
         "id": "str",
@@ -85,6 +87,8 @@
     "allow_list": false,
     "emit_server_telemetry": true,
     "public_hostname": "",
+    "seed_worker_enabled": true,
+    "seed_storage_path": "/share/htdocs/minedev/storage",
     "instances": []
   }
 }

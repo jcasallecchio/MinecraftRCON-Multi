@@ -1,5 +1,11 @@
 # Histórico de versões
 
+## 0.3.7 — Worker de setores executado no Home Assistant
+- Processa setores de estruturas e masmorras na fila privada do MineDev dentro do add-on; o navegador e os PCs não executam os cálculos.
+- Compila o gerador contra uma revisão fixa do cubiomes-bedrock durante a construção da imagem do add-on.
+- Inclui opções para ativar o worker e indicar a pasta `storage` do MineDev, além de recuperação de tarefas interrompidas.
+- Executa o worker com prioridade de CPU reduzida e encerra junto com o add-on.
+
 ## 0.3.6 — Reconhece mais formatos de mensagens de morte
 - Aceita mensagens de morte do Bedrock com prefixos de chat/sistema e registros estruturados do servidor.
 - Mantém o incremento persistente da estatística por evento de morte identificado.

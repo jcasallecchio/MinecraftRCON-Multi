@@ -143,3 +143,11 @@ Exemplo: se a instância `creative` usa a porta 19134, o jogador entra pelo host
 | `instances` | Lista de 1 a 5 instâncias editada diretamente no formulário do Home Assistant. |
 | `backup_interval_hours` | Frequência de backup por instância, em horas. |
 | `backup_keep_count` | Quantidade de backups retidos por instância. |
+| `seed_worker_enabled` | Executa dentro do add-on os cálculos de setores solicitados pelo mapa MineDev. Ligado por padrão; não inicia cálculos sem tarefas na fila. |
+| `seed_storage_path` | Caminho absoluto para `storage` do MineDev visto pelo Home Assistant. O padrão é `/share/htdocs/minedev/storage`. |
+
+### Worker de mapas MineDev
+
+Desde a versão 0.3.7, os setores pendentes são calculados pelo processo auxiliar dentro do add-on, usando CPU e armazenamento do Home Assistant. O navegador e o computador que acessa o MineDev apenas enviam a solicitação ao PHP e exibem o resultado. O add-on já mapeia `/share` com leitura e gravação; ajuste `seed_storage_path` se a pasta privada do MineDev estiver em outro local dentro desse compartilhamento.
+
+O worker só calcula quando há solicitações em `seed-jobs/`. Cálculos de masmorras são isolados dos demais setores e só são enfileirados quando o filtro Dungeon é usado. A prioridade do processo é reduzida para deixar o Bedrock em primeiro plano. O add-on compila o binário durante a construção da imagem, usando uma revisão fixa do cubiomes-bedrock; reiniciar o add-on ou o Home Assistant não exige WSL nem processo auxiliar em outro computador.

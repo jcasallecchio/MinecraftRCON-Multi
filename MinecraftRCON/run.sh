@@ -91,12 +91,44 @@ then
 fi
 
 declare -a INSTANCE_PIDS=()
+WORKER_PID=""
 shutdown() {
   log "Encerrando todas as instâncias..."
+  if [[ -n "$WORKER_PID" ]]; then kill -TERM "$WORKER_PID" 2>/dev/null || true; fi
   for pid in "${INSTANCE_PIDS[@]}"; do kill -TERM "$pid" 2>/dev/null || true; done
+  if [[ -n "$WORKER_PID" ]]; then wait "$WORKER_PID" 2>/dev/null || true; fi
   for pid in "${INSTANCE_PIDS[@]}"; do wait "$pid" 2>/dev/null || true; done
 }
 trap 'shutdown; exit 0' TERM INT
+
+if [[ -s /tmp/minecraft-instances.tsv ]]; then
+  read -r seed_worker_enabled seed_storage_path < <(python3 - "$OPTIONS_FILE" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as stream:
+    options = json.load(stream)
+enabled = options.get("seed_worker_enabled", True)
+storage = options.get("seed_storage_path", "/share/htdocs/minedev/storage")
+if not isinstance(enabled, bool):
+    raise SystemExit("[manager] seed_worker_enabled precisa ser booleano.")
+if not isinstance(storage, str) or not storage.startswith("/") or any(c in storage for c in "\t\r\n"):
+    raise SystemExit("[manager] seed_storage_path precisa ser um caminho absoluto.")
+print(str(enabled).lower() + "\t" + storage)
+PY
+  )
+  if [[ "$seed_worker_enabled" == "true" ]]; then
+    if [[ -d "$seed_storage_path" ]]; then
+      MINDEV_SEED_STORAGE="$seed_storage_path" nice -n 10 python3 /seed_tile_worker.py &
+      WORKER_PID="$!"
+      log "Worker de setores do MineDev iniciado no Home Assistant."
+    else
+      log "Armazenamento do MineDev não encontrado em $seed_storage_path; worker de setores aguardando configuração."
+    fi
+  else
+    log "Cálculo de setores do MineDev desativado nas opções do add-on."
+  fi
+fi
 
 while IFS=$'\t' read -r instance_id display_name world_name udp_port api_port allow_list emit_telemetry public_ip; do
   [[ -n "$instance_id" ]] || continue
@@ -124,6 +156,11 @@ fi
 
 log "Gerenciador ativo com ${#INSTANCE_PIDS[@]} instância(s)."
 while true; do
+  if [[ -n "$WORKER_PID" ]] && ! kill -0 "$WORKER_PID" 2>/dev/null; then
+    wait "$WORKER_PID" || status=$?
+    log "Worker de setores encerrou inesperadamente (código ${status:-1}); as instâncias Bedrock continuarão em execução. Reinicie o add-on para reativar o worker."
+    WORKER_PID=""
+  fi
   for pid in "${INSTANCE_PIDS[@]}"; do
     if ! kill -0 "$pid" 2>/dev/null; then
       wait "$pid" || status=$?

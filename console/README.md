@@ -116,42 +116,19 @@ A previsão de biomas usa amostras de 16 em 16 blocos, exibidas sem desfoque por
 
 ### Exploração pela seed
 
-O MineDev acrescenta ao snapshot camadas de **biomas, locais e slime chunks** para o Overworld, inclusive fora dos chunks já explorados. Em **Explorar pela seed**, o mapa de biomas permanece como fundo e os 27 filtros de locais começam desmarcados. Ative somente os tipos desejados, consulte a legenda ou use **Todos disponíveis** e **Nenhum**. Dungeon tem seleção adicional por zumbi, esqueleto e aranha. Clique no mapa para consultar o bioma; a indicação de slime chunk aparece quando esse filtro estiver ligado. Os arquivos são separados por instância e entregues apenas após login. A geração é feita fora do servidor Bedrock: nenhum mundo precisa parar para isso.
+O MineDev acrescenta ao snapshot camadas de **biomas, locais e slime chunks** para o Overworld, inclusive fora dos chunks já explorados. Em **Explorar pela seed**, o mapa de biomas permanece como fundo e os 27 filtros de locais começam desmarcados. Ative somente os tipos desejados, consulte a legenda ou use **Todos disponíveis** e **Nenhum**. Dungeon tem seleção adicional por zumbi, esqueleto e aranha. Clique no mapa para consultar o bioma; a indicação de slime chunk aparece quando esse filtro estiver ligado. Os arquivos são separados por instância e entregues apenas após login. O navegador apenas solicita os setores visíveis; o cálculo de biomas, slime chunks e estruturas é feito no Home Assistant pelo worker do add-on MinecraftRCON Multi, sem transferir o processamento para o PC ou celular e sem parar os mundos. O add-on precisa estar na versão 0.3.7 ou superior e ter acesso à pasta `storage` do MineDev.
 
 O catálogo mostra Spawn Point, Slime Chunk, Village, Ancient City, Dungeon, Mansion, Monument, Outpost, Mineshaft, Ruined Portal, Jungle Temple, Desert Temple, Witch Hut, Treasure, Shipwreck, Igloo, Ocean Ruins, Fossil, Cave, Ravine, Lava Pool, Geode, Ore Veins, Desert Well, Trail Ruins, Trial Chamber e Camp, nessa ordem. Fossil, Cave e Ore Veins ficam desabilitados enquanto não houver dados calculados; não são representados por marcadores fictícios. Masmorras aparecem separadas pelo tipo de gerador: zumbi, esqueleto ou aranha, com X/Y/Z. O mapa divide o raio de 32.768 blocos em setores de 2.048 blocos e calcula as estruturas disponíveis e masmorras conforme cada setor é carregado; isso dispensa uma varredura monolítica de toda a área. O mapa desenha até 2.500 marcadores da área visível. A lista de posições próximas considera os setores carregados.
 
-Os dados usam o código aberto [FragrantResult186/cubiomes-bedrock](https://github.com/FragrantResult186/cubiomes-bedrock), sob licença MIT, fixado no commit `294c72ab0392dd818a91d293dbd5774d4874d64b`. Esta revisão modela as regras **Bedrock 26.60**; o servidor deste projeto usa **1.26.66.1**. O mapa de biomas é amostrado em **Y 64**. A busca de masmorras avalia terreno e cavernas em 3D, por isso é limitada a uma área configurável; uma varredura de 32.768 blocos de raio pode levar dezenas de horas. O gerador não calcula aqui cavernas individuais, veios de minério, fósseis, loot ou a coordenada Y dos demais locais. Esses dados exigem outras rotinas ou leitura dos chunks. A posição de spawn calculada pelo motor pode diferir por causa da seleção de blocos de grama. Pacotes que alterem a geração, checagens de terreno e chunks criados em outra versão podem mudar posições. O terreno do snapshot mostra o que foi salvo no mundo.
+Os dados usam o código aberto [FragrantResult186/cubiomes-bedrock](https://github.com/FragrantResult186/cubiomes-bedrock), sob licença MIT, fixado no commit `294c72ab0392dd818a91d293dbd5774d4874d64b`. O add-on compila esse motor durante a construção da imagem do Home Assistant. Esta revisão modela as regras **Bedrock 26.60**; o servidor deste projeto usa **1.26.66.1**. O mapa de biomas é amostrado em **Y 64**. A busca de masmorras avalia terreno e cavernas em 3D e é feita por setor, apenas quando o filtro correspondente está ativo. O catálogo ainda não calcula cavernas individuais, veios de minério, fósseis, loot ou a coordenada Y dos demais locais. Pacotes que alterem a geração, checagens de terreno e chunks criados em outra versão podem mudar posições. O terreno do snapshot mostra o que foi salvo no mundo.
 
-Para gerar a camada no Windows, tenha **WSL com Ubuntu, gcc e make**, **Python 3** no Windows, uma cópia local deste repositório e uma pasta local com o código do motor:
-
-~~~powershell
-git clone https://github.com/FragrantResult186/cubiomes-bedrock.git C:\cubiomes-bedrock
-git -C C:\cubiomes-bedrock checkout 294c72ab0392dd818a91d293dbd5774d4874d64b
-wsl --user root --exec apt-get update
-wsl --user root --exec apt-get install -y gcc make
-& '.\console\tools\generate-seed-layer.ps1' `
-  -InstanceId 'main' `
-  -Seed 'SEED_DO_MUNDO' `
-  -EnginePath 'C:\cubiomes-bedrock' `
-  -ConsoleRoot '\\SERVIDOR\share\htdocs\minedev' `
-  -Radius 32768 `
-  -DungeonRadius 512 `
-  -ServerVersion '1.26.66.1'
-~~~
-
-Execute os comandos na raiz da cópia local do repositório. Ajuste ID, seed, caminhos e versão conforme seu ambiente. Para outra instância, execute novamente com o ID correspondente. `Radius` aceita múltiplos de 16 entre 512 e 32768 blocos; `DungeonRadius` controla apenas a varredura inicial ao redor de X/Z 0. A ferramenta compila o motor localmente, calcula os dados, valida os arquivos e publica `storage/seed-layer-<id>.json`, setores iniciais `storage/seed-tiles-<id>-<revisão>/` e imagens PNG versionadas de biomas e slime chunks. Ela também amplia a área navegável do mapa publicado; o atualizador de snapshots preserva essa área nas próximas exportações. Recarregue a aba **Mapa** após publicar. No Bedrock, a regra dos slime chunks usa coordenadas e não depende da seed.
+As camadas de biomas e slime chunks das instâncias atuais já estão publicadas no armazenamento privado. Durante o uso normal do mapa, nenhuma ferramenta de desenvolvimento precisa ficar rodando em um PC.
 
 #### Cálculo progressivo de setores
 
-Quando a API recebe um setor que ainda não está no cache, grava um trabalho privado em `storage/seed-jobs/` e responde `202`. O mapa aguarda o worker e repete a consulta. Execute o worker em um computador Windows que tenha acesso à pasta do console e WSL:
+Quando a API recebe um setor que ainda não está no cache, grava um trabalho privado em `storage/seed-jobs/` e responde `202`. O mapa aguarda o resultado. O add-on **MinecraftRCON Multi 0.3.7 ou posterior** processa essa fila dentro do Home Assistant, usando o mesmo compartilhamento `/share` do MineDev. Nas opções do add-on, mantenha **Calcular setores da seed do MineDev no Home Assistant** ligado e `seed_storage_path` apontando para `/share/htdocs/minedev/storage` (ou para a pasta `storage` real da instalação). O binário do motor é compilado durante a construção da imagem do add-on, usando a revisão fixa `294c72ab0392dd818a91d293dbd5774d4874d64b` do cubiomes-bedrock.
 
-~~~powershell
-& '.\console\tools\seed-tile-worker.ps1' `
-  -EnginePath 'C:\cubiomes-bedrock' `
-  -ConsoleRoot '\\SERVIDOR\share\htdocs\minedev'
-~~~
-
-O worker compila `seed-tile.c` uma vez, verifica a seed e revisão no manifesto da instância, calcula somente os pontos daquele setor de 2.048 blocos e grava o JSON por troca atômica. Ele inclui os tipos de estrutura e locais suportados pelo motor e spawn. Quando um filtro de Dungeon é ativado, o navegador pede uma camada separada para aquele setor; o worker calcula masmorras Bedrock por tipo de criatura (zumbi, esqueleto e aranha), com coordenadas X/Y/Z, sem recalcular as estruturas já armazenadas. Assim, a busca cobre o raio inteiro conforme os setores são visitados, e não depende do raio curto do primeiro snapshot. Deixe o worker em execução enquanto quiser calcular setores novos; ele pode rodar em uma máquina separada, desde que veja o mesmo `storage/`. Setores já armazenados são servidos direto do cache sem novo cálculo. O worker não precisa de token RCON e não reinicia o Bedrock. A fila, o gerador e os dados permanecem no ambiente local.
+O worker processa um setor de 2.048 blocos por vez, valida seed e revisão antes de publicar o resultado por troca atômica e recupera trabalhos interrompidos. Os filtros de estruturas usam o cache existente; masmorras têm uma camada separada, calculada no Home Assistant somente quando o filtro Dungeon é selecionado. O cálculo é feito em baixa prioridade e não reinicia o Bedrock. O browser e o computador que o usuário está usando apenas enviam a solicitação e mostram o resultado; eles não executam os cálculos.
 
 ### Jogadores ao vivo (etapa 4)
 

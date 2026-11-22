@@ -6,4 +6,4 @@ Gerencie até cinco servidores dedicados Minecraft Bedrock simultâneos no Home 
 2. Configure a lista **Mundos/instâncias** no formulário do add-on, informando ID, nome, pasta do mundo e porta de conexão para cada servidor.
 3. Inicie o add-on e conecte cada jogador ao IP do Home Assistant e à porta de jogo correspondente. Para NetherNet, permita TCP e UDP nessa porta.
 
-O painel web MineDev é opcional. Consulte a aba **Documentação** ou [Instalação e configuração](DOCS.md), [Acesso externo](../docs/acesso-remoto.md) e [MineDev Console](../console/README.md). As APIs RCON ficam em `19233–19237/TCP`; restrinja-as à rede local ou VPN e não as encaminhe pela internet.
+O painel web MineDev é opcional. Os cálculos de setores do mapa são executados dentro deste add-on no Home Assistant. Consulte a aba **Documentação** ou [Instalação e configuração](DOCS.md), [Acesso externo](../docs/acesso-remoto.md) e [MineDev Console](../console/README.md). As APIs RCON ficam em `19233–19237/TCP`; restrinja-as à rede local ou VPN e não as encaminhe pela internet.

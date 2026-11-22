@@ -14,6 +14,12 @@ configuration:
   public_hostname:
     name: Hostname público dos mundos
     description: Opcional. Informe o DuckDNS ou outro DNS público sem http:// e sem porta. O add-on resolve o IPv4 ao iniciar e o anuncia no UDP NetherNet de cada mundo.
+  seed_worker_enabled:
+    name: Calcular setores da seed do MineDev no Home Assistant
+    description: Executa o worker do mapa neste add-on. Ele processa setores somente quando o mapa do MineDev os solicita.
+  seed_storage_path:
+    name: Caminho do armazenamento do MineDev
+    description: Caminho absoluto da pasta storage privada do MineDev, como vista pelo Home Assistant. Normalmente /share/htdocs/minedev/storage.
   backup_interval_hours:
     name: Intervalo de backup (horas)
   backup_keep_count:

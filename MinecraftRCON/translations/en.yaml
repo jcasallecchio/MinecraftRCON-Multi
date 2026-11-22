@@ -14,6 +14,12 @@ configuration:
   public_hostname:
     name: Public hostname for worlds
     description: Optional DuckDNS or other public DNS name without http:// or a port. The add-on resolves its IPv4 at startup and advertises it for NetherNet UDP on each world.
+  seed_worker_enabled:
+    name: Calculate MineDev seed sectors on Home Assistant
+    description: Runs the map calculation worker inside this add-on. It processes queued sectors only when the MineDev seed map requests them.
+  seed_storage_path:
+    name: MineDev storage path
+    description: Absolute path to the MineDev private storage folder as seen inside Home Assistant, usually /share/htdocs/minedev/storage.
   backup_interval_hours:
     name: Backup interval (hours)
   backup_keep_count:
