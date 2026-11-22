@@ -11,7 +11,7 @@
   window.MineDevMap = Object.freeze({ map, gameToMap, mapToGame, centerAt(x, z) { unmined.center([Number(x), Number(z)]); } });
   const css = document.createElement('link');
   css.rel = 'stylesheet';
-  css.href = 'minedev-map-bridge.css?v=22';
+  css.href = 'minedev-map-bridge.css?v=23';
   document.head.append(css);
 
   const panel = document.createElement('section');
@@ -129,7 +129,7 @@
       return;
     }
     $('.minedev-live-count').textContent = String(data.online_count);
-    status.textContent = 'Jogadores ao vivo';
+    status.textContent = '';
     if (!data.players.length) {
       const empty = document.createElement('p'); empty.className = 'minedev-map-empty'; empty.textContent = 'Nenhum jogador online.'; list.append(empty);
     }
