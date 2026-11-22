@@ -28,6 +28,8 @@
 
 Veja [configuração, portas e migração](MinecraftRCON/DOCS.md), [acesso remoto com DuckDNS ou DNS](docs/acesso-remoto.md) e [instalação do MineDev](console/README.md).
 
+Para o mapa MineDev, a partir do add-on **0.3.9** o Home Assistant processa estruturas e camadas adicionais por setor. Uma instalação nova ainda precisa publicar o snapshot e a camada inicial da seed por instância. Consulte [preparação completa do mapa](console/README.md#preparar-uma-instalação-nova-do-mapa); a preparação inicial usa uNmINeD e WSL em um computador.
+
 ## Console e segurança
 
 O add-on expõe a API HTTP autenticada em `19233/TCP` para a primeira instância, `19234/TCP` para a segunda e assim por diante. Restrinja essas portas à rede local ou VPN; não as encaminhe pela internet. Encaminhe no roteador apenas as portas do jogo que você quer disponibilizar.

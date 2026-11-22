@@ -29,14 +29,14 @@ Na aba de configuração do add-on, edite a lista **Mundos/instâncias**. Cada i
 | `world_name` | Sim | Valor `level-name` do mundo Bedrock. Para usar um mundo já copiado, deve corresponder ao nome da pasta em `worlds/`. |
 | `udp_port` | Sim | Porta de conexão do mundo, entre 1024 e 65533. O add-on usa esse número para sinalização TCP e tráfego UDP do NetherNet. |
 
-O formulário começa com uma instância de exemplo:
+Em uma instalação nova, a lista começa vazia. Cadastre a primeira instância, por exemplo:
 
 - ID: `main`
-- Nome exibido: `Abydos`
-- Nome da pasta do mundo: `Abydos`
+- Nome exibido: `Meu mundo`
+- Nome da pasta do mundo: `Meu mundo`
 - Porta UDP: `19132`
 
-Para criar outra, adicione uma nova entrada no formulário e preencha, por exemplo:
+Para adicionar outra instância, adicione uma entrada no formulário e preencha, por exemplo:
 
 - ID: `creative`
 - Nome exibido: `Criativo`

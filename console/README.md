@@ -79,9 +79,34 @@ Para trocar o usuário ou a senha, execute `php tools/set-login.php`. Se o PHP l
    O catálogo busca comandos, aliases, opções de argumentos e identificadores de itens, blocos e entidades nos metadados versionados do repositório oficial [Mojang/bedrock-samples](https://github.com/Mojang/bedrock-samples). Quando o catálogo é consultado, o servidor web verifica se há uma nova versão estável; a cópia privada em `storage/bedrock_catalog.json` é atualizada no máximo uma vez a cada 24 horas. Os arquivos distribuídos em `assets/bedrock-items.json` e `assets/bedrock-command-data.json` são usados como fallback se o GitHub estiver indisponível. Para atualizar automaticamente, o PHP precisa ter cURL habilitado, acesso HTTPS de saída a `raw.githubusercontent.com` e permissão de escrita em `storage/`. O autocomplete sugere jogadores/seletor, itens, blocos, entidades e opções válidas para a posição do argumento; digitar filtra a lista. A tela mostra as versões do servidor e dos metadados, além da quantidade de itens carregados. O catálogo oficial cobre itens vanilla; itens personalizados de add-ons não são descobertos automaticamente.
 5. Em **Histórico**, consulte os eventos mais recentes e use **Exportar CSV** para salvar o período disponível. **Limpar tela** limpa apenas o terminal. Os registros são salvos em `storage/`. Quando o painel é acessado, a limpeza periódica remove os eventos que passaram da retenção.
 6. O quadro do **Console** abre em **Terminal**, com comandos e retornos. Clique em **Feed** para ver, no mesmo quadro, entradas, saídas e mortes do mundo selecionado; o botão passa a **Terminal** para voltar. O campo de comandos permanece na mesma posição nas duas visualizações; ao enviar um comando pelo Feed, o painel volta ao Terminal para mostrar o retorno. O Feed carrega até 20 eventos recentes e consulta novos eventos automaticamente a cada cinco segundos enquanto está aberto. **Limpar tela** limpa a visualização aberta, sem apagar o histórico persistente; os eventos do Feed reaparecem quando ele é carregado novamente. O add-on mantém os eventos do Feed por até sete dias.
-7. Em **Mapa**, explore os chunks já visitados no mundo da instância selecionada. O mapa mostra a data do snapshot; **Recarregar mapa** atualiza a visualização do arquivo publicado, sem reler o mundo ativo.
+7. Em **Mapa**, explore os chunks já visitados no mundo da instância selecionada. O mapa mostra a data do snapshot; **Recarregar mapa** atualiza a visualização do arquivo publicado, sem reler o mundo ativo. Para novas instâncias, publique primeiro um snapshot e, se quiser a exploração pela seed, gere também a camada inicial de biomas/slime descrita abaixo.
 8. Em **Estatísticas**, compare tempo jogado, sessões, saídas, mortes e última atividade por jogador. Os totais são persistidos pelo add-on sem expiração e continuam acumulando entre reinicializações.
 9. Em **Configuração**, edite o `server.properties` da instância selecionada. **Salvar** grava o arquivo sem interromper jogadores; **Salvar e reiniciar** grava e reinicia somente essa instância para aplicar as opções. O editor detecta alterações simultâneas e pede para recarregar antes de sobrescrever. Nome do mundo, portas, transporte, allowlist e telemetria são controlados pela configuração do add-on e não podem ser alterados por esse editor. É necessário MinecraftRCON Multi **0.3.3** ou superior.
+
+### Preparar uma instalação nova do mapa
+
+O mapa usa dois conjuntos independentes. O snapshot de terreno mostra chunks gravados no mundo; a exploração pela seed usa um manifesto e imagens de biomas/slime, além de setores calculados sob demanda. Para um ID novo, o MineDev não cria automaticamente o manifesto nem as imagens-base da seed. Sem esses arquivos, o mapa de terreno ainda pode funcionar, mas a API da seed informa que os dados da seed estão indisponíveis.
+
+Para preparar o mapa de uma instância nova:
+
+1. Configure o mundo no add-on e anote o ID, `world_name` e seed em `server.properties` (`level-seed`).
+2. Publique o snapshot de chunks conforme a seção seguinte.
+3. Gere o manifesto e as imagens-base de biomas/slime com `console/tools/generate-seed-layer.ps1`. Essa etapa usa PowerShell, WSL, GCC, Python 3, `cubiomes-bedrock` e Python Pillow; não é executada pelo worker do add-on. Exemplo:
+
+~~~powershell
+& '.\tools\generate-seed-layer.ps1' `
+  -InstanceId 'main' `
+  -Seed '757067671151835873' `
+  -EnginePath 'C:\Ferramentas\cubiomes-bedrock' `
+  -ConsoleRoot (Get-Location).Path `
+  -Radius 32768 `
+  -DungeonRadius 512 `
+  -ServerVersion '1.26.66.1'
+~~~
+
+O script grava os arquivos validados em `storage/` e prepara biomas, slime chunks, estruturas e masmorras na área indicada. A seed precisa corresponder à instância. **Essa preparação inicial inteira acontece no computador com WSL.** Depois, setores ausentes ou camadas complementares podem ser calculados pelo worker no Home Assistant.
+
+**Limite atual:** a geração inicial do manifesto, biomas, slime chunks, estruturas e masmorras ainda não roda dentro do Home Assistant. Portanto, a instalação limpa do mapa não é processada integralmente no Home Assistant do primeiro ao último passo. O worker cobre os setores e camadas solicitados após a publicação do manifesto.
 
 ### Publicar ou atualizar um mapa
 
@@ -116,7 +141,7 @@ A previsão de biomas usa amostras de 16 em 16 blocos, exibidas sem desfoque por
 
 ### Exploração pela seed
 
-O MineDev acrescenta ao snapshot camadas de **biomas, locais e slime chunks** para o Overworld, inclusive fora dos chunks já explorados. Em **Explorar pela seed**, o mapa de biomas permanece como fundo e os 27 filtros de locais começam desmarcados. Ative somente os tipos desejados, consulte a legenda ou use **Todos disponíveis** e **Nenhum**. Dungeon tem seleção adicional por zumbi, esqueleto e aranha. Clique no mapa para consultar o bioma; a indicação de slime chunk aparece quando esse filtro estiver ligado. Os arquivos são separados por instância e entregues apenas após login. O navegador apenas solicita os setores visíveis; estruturas, masmorras e as camadas de cavernas, fósseis e veios são calculadas no Home Assistant pelo worker do add-on MinecraftRCON Multi, sem transferir esses cálculos para o PC ou celular e sem parar os mundos. O add-on precisa estar na versão 0.3.8 ou superior e ter acesso à pasta `storage` do MineDev.
+O MineDev acrescenta ao snapshot camadas de **biomas, locais e slime chunks** para o Overworld, inclusive fora dos chunks já explorados. Em **Explorar pela seed**, o mapa de biomas permanece como fundo e os 27 filtros de locais começam desmarcados. Ative somente os tipos desejados, consulte a legenda ou use **Todos disponíveis** e **Nenhum**. Dungeon tem seleção adicional por zumbi, esqueleto e aranha. Clique no mapa para consultar o bioma; a indicação de slime chunk aparece quando esse filtro estiver ligado. Os arquivos são separados por instância e entregues apenas após login. O navegador apenas solicita os setores visíveis; estruturas, masmorras e as camadas de cavernas, fósseis e veios são calculadas no Home Assistant pelo worker do add-on MinecraftRCON Multi, sem transferir esses cálculos para o PC ou celular e sem parar os mundos. É necessário o add-on **0.3.9 ou superior**, o worker habilitado e acesso à pasta `storage` do MineDev. A camada base de biomas/slime precisa ter sido publicada para a instância.
 
 O catálogo mostra Spawn Point, Slime Chunk, Village, Ancient City, Dungeon, Mansion, Monument, Outpost, Mineshaft, Ruined Portal, Jungle Temple, Desert Temple, Witch Hut, Treasure, Shipwreck, Igloo, Ocean Ruins, Fossil, Cave, Ravine, Lava Pool, Geode, Ore Veins, Desert Well, Trail Ruins, Trial Chamber e Camp, nessa ordem. Fóssil, Caverna e Veio de minério são calculados por setor quando algum desses filtros está ativo. Veios de ferro e cobre têm nomes separados; fósseis e veios incluem a coordenada Y. Cavernas são representadas por pontos amostrados em bolsões subterrâneos, não por um contorno contínuo de toda a rede. Masmorras aparecem separadas pelo tipo de gerador: zumbi, esqueleto ou aranha, com X/Y/Z. O mapa divide o raio de 32.768 blocos em setores de 2.048 blocos e calcula as estruturas disponíveis e masmorras conforme cada setor é carregado; isso dispensa uma varredura monolítica de toda a área. O mapa desenha até 2.500 marcadores da área visível. A lista de posições próximas considera os setores carregados.
 
@@ -126,7 +151,7 @@ As camadas de biomas e slime chunks das instâncias atuais já estão publicadas
 
 #### Cálculo progressivo de setores
 
-Quando a API recebe um setor que ainda não está no cache, grava um trabalho privado em `storage/seed-jobs/` e responde `202`. O mapa aguarda o resultado. O add-on **MinecraftRCON Multi 0.3.8 ou posterior** processa essa fila dentro do Home Assistant, usando o mesmo compartilhamento `/share` do MineDev. Nas opções do add-on, mantenha **Calcular setores da seed do MineDev no Home Assistant** ligado e `seed_storage_path` apontando para `/share/htdocs/minedev/storage` (ou para a pasta `storage` real da instalação). Os binários dos motores são compilados durante a construção da imagem do add-on, usando as revisões fixas descritas nesta seção.
+Quando a API recebe um setor que ainda não está no cache, grava um trabalho privado em `storage/seed-jobs/` e responde `202`. O mapa aguarda o resultado. O add-on **MinecraftRCON Multi 0.3.9 ou posterior** processa essa fila dentro do Home Assistant, usando o mesmo compartilhamento `/share` do MineDev. Nas opções do add-on, mantenha **Calcular setores da seed do MineDev no Home Assistant** ligado e `seed_storage_path` apontando para `/share/htdocs/minedev/storage` (ou para a pasta `storage` real da instalação). Os binários dos motores são compilados durante a construção da imagem do add-on, usando as revisões fixas descritas nesta seção.
 
 O worker processa um setor de 2.048 blocos por vez, valida seed e revisão antes de publicar o resultado por troca atômica e recupera trabalhos interrompidos. Os filtros de estruturas usam o cache existente; masmorras têm uma camada separada, calculada no Home Assistant somente quando o filtro Dungeon é selecionado. O cálculo é feito em baixa prioridade e não reinicia o Bedrock. O browser e o computador que o usuário está usando apenas enviam a solicitação e mostram o resultado; eles não executam os cálculos.
 
