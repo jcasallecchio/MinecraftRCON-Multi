@@ -11,7 +11,7 @@
   window.MineDevMap = Object.freeze({ map, gameToMap, mapToGame, centerAt(x, z) { unmined.center([Number(x), Number(z)]); } });
   const css = document.createElement('link');
   css.rel = 'stylesheet';
-  css.href = 'minedev-map-bridge.css?v=32';
+  css.href = 'minedev-map-bridge.css?v=33';
   document.head.append(css);
 
   const panel = document.createElement('section');
@@ -36,9 +36,10 @@
   const structureModal = document.createElement('dialog');
   structureModal.className = 'minedev-structure-modal';
   structureModal.setAttribute('aria-labelledby', 'minedev-structure-title');
-  structureModal.innerHTML = '<header class="minedev-structure-modal-head"><strong id="minedev-structure-title">Locais e estruturas</strong><button type="button" class="minedev-structure-close" aria-label="Fechar">×</button></header><p class="minedev-structure-status" hidden></p><div class="minedev-structure-grid" role="group" aria-label="Filtros de estruturas"></div>';
+  structureModal.innerHTML = '<header class="minedev-structure-modal-head"><strong id="minedev-structure-title">Locais e estruturas</strong><button type="button" class="minedev-structure-close" aria-label="Fechar">×</button></header><button type="button" class="minedev-biome-toggle" role="switch" aria-label="Biomas" aria-checked="true"><span class="minedev-biome-toggle-label"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="6" r="2.2"/><path d="m3 19 6.2-7 4.2 4.2 2.7-3 4.9 5.8H3Z"/></svg><span>Biomas</span></span><span class="minedev-switch-track"><span></span></span></button><p class="minedev-structure-status" hidden></p><div class="minedev-structure-grid" role="group" aria-label="Filtros de estruturas"></div>';
   document.body.append(structureModal);
   const structureGrid = structureModal.querySelector('.minedev-structure-grid');
+  const biomeToggle = structureModal.querySelector('.minedev-biome-toggle');
   const structureStatus = structureModal.querySelector('.minedev-structure-status');
   const hud = document.createElement('output');
   hud.className = 'minedev-map-hud';
@@ -63,6 +64,7 @@
   let seedStructures = [];
   let seedSource = null;
   let seedImageLayer = null;
+  let biomeLayerEnabled = true;
   let seedSlimeLayer = null;
   let seedBiomeAt = null;
   let seedSlimeAt = null;
@@ -73,6 +75,13 @@
   const seedTiles = new Map();
   const pendingSeedTiles = new Set();
   const enabledTypes = new Set();
+  function setBiomeLayerEnabled(enabled) {
+    biomeLayerEnabled = Boolean(enabled);
+    seedImageLayer?.setVisible(biomeLayerEnabled);
+    biomeToggle.setAttribute('aria-checked', String(biomeLayerEnabled));
+    biomeToggle.classList.toggle('is-off', !biomeLayerEnabled);
+  }
+  biomeToggle.addEventListener('click', () => setBiomeLayerEnabled(!biomeLayerEnabled));
   const seedCatalog = [
     ['Spawn Point', 'spawn', 'spawn_point'], ['Slime Chunk', 'slime', 'slime_chunk'], ['Village', 'village', 'village'], ['Ancient City', 'ancient_city', 'ancient_city'],
     ['Dungeon', 'dungeon', 'dungeon'], ['Mansion', 'mansion', 'mansion'], ['Monument', 'monument', 'monument'], ['Outpost', 'outpost', 'outpost'],
@@ -327,7 +336,7 @@
         gameToMap(data.min_x + data.width * data.step, data.min_z)[0],
         gameToMap(data.min_x + data.width * data.step, data.min_z)[1]];
       // Seed samples cover 16 x 16 blocks. Draw below saved terrain.
-      seedImageLayer = new ol.layer.Image({ source: new ol.source.ImageStatic({ url: data.image_url, imageExtent: extent, projection: unmined.viewProjection, interpolate: false }), opacity: 1, zIndex: -1 });
+      seedImageLayer = new ol.layer.Image({ source: new ol.source.ImageStatic({ url: data.image_url, imageExtent: extent, projection: unmined.viewProjection, interpolate: false }), opacity: 1, visible: biomeLayerEnabled, zIndex: -1 });
       map.addLayer(seedImageLayer);
       const biomeNames = new Map((data.biomes || []).filter((biome) => typeof biome.color === 'string' && typeof biome.name === 'string')
         .map((biome) => [biome.color.toLowerCase(), biome.name.replaceAll('_', ' ')]));
