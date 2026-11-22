@@ -43,6 +43,20 @@ $binary = "$tempWsl/seed-tile"
 & wsl.exe --exec gcc -O2 -Wall -Wextra -fwrapv "-I$engineWsl" $sourceWsl "$engineWsl/libcubiomes.a" -lm -pthread -o $binary
 if ($LASTEXITCODE -ne 0) { throw 'Falha ao compilar o gerador de setores.' }
 $outputWsl = "$tempWsl/tile.json"
+function Publish-GeneratedTile([string]$Seed, [int]$Radius, [int]$TileX, [int]$TileZ, [string]$Destination, [switch]$DungeonsOnly) {
+    if ($DungeonsOnly) { & wsl.exe --exec $binary $Seed $Radius $TileX $TileZ $outputWsl 'dungeons' }
+    else { & wsl.exe --exec $binary $Seed $Radius $TileX $TileZ $outputWsl }
+    if ($LASTEXITCODE -ne 0) { throw 'O gerador não concluiu o setor.' }
+    $generated = Join-Path $temp 'tile.json'
+    $json = [IO.File]::ReadAllText($generated)
+    if (-not $json.Trim().StartsWith('[') -or -not $json.Trim().EndsWith(']')) { throw 'JSON do setor não é uma lista.' }
+    $null = ConvertFrom-Json -InputObject $json -ErrorAction Stop
+    $destinationDir = Split-Path -Parent $Destination
+    New-Item -ItemType Directory -Path $destinationDir -Force | Out-Null
+    $staged = $Destination + '.' + [guid]::NewGuid().ToString('N') + '.tmp'
+    [IO.File]::WriteAllBytes($staged, [IO.File]::ReadAllBytes($generated))
+    Move-Item -LiteralPath $staged -Destination $Destination -Force
+}
 $lockPath = Join-Path $queue '.worker.lock'
 $lock = [IO.File]::Open($lockPath, [IO.FileMode]::OpenOrCreate, [IO.FileAccess]::ReadWrite, [IO.FileShare]::None)
 Write-Host "MineDev tile worker ativo. Fila: $queue"
@@ -57,7 +71,8 @@ try {
             $request = Get-Content -LiteralPath $claim -Raw | ConvertFrom-Json
             if ($request.instance_id -notmatch '^[a-z0-9][a-z0-9_-]{0,31}$' -or
                 $request.revision -notmatch '^[a-f0-9]{24}$' -or
-                $request.x -lt -16 -or $request.x -gt 15 -or $request.z -lt -16 -or $request.z -gt 15) {
+                $request.x -lt -16 -or $request.x -gt 15 -or $request.z -lt -16 -or $request.z -gt 15 -or
+                ($request.PSObject.Properties.Name -contains 'dungeons' -and $request.dungeons -isnot [bool])) {
                 throw 'Solicitação de setor inválida.'
             }
             $metadataPath = Join-Path $storage "seed-layer-$($request.instance_id).json"
@@ -69,19 +84,16 @@ try {
             $radius = -[int]$metadata.min_x
             if ($radius -lt 512 -or $radius -gt 32768) { throw 'Raio da seed inválido.' }
             $targetDir = Join-Path $storage "seed-tiles-$($request.instance_id)-$($request.revision)"
-            New-Item -ItemType Directory -Path $targetDir -Force | Out-Null
             $target = Join-Path $targetDir "$($request.x)_$($request.z).json"
-            if (-not (Test-Path -LiteralPath $target -PathType Leaf)) {
-                & wsl.exe --exec $binary $metadata.seed $radius $request.x $request.z $outputWsl
-                if ($LASTEXITCODE -ne 0) { throw 'O gerador não concluiu o setor.' }
-                $generated = Join-Path $temp 'tile.json'
-                $json = [IO.File]::ReadAllText($generated)
-                if (-not $json.Trim().StartsWith('[') -or -not $json.Trim().EndsWith(']')) { throw 'JSON do setor não é uma lista.' }
-                $null = ConvertFrom-Json -InputObject $json -ErrorAction Stop
-                $bytes = [IO.File]::ReadAllBytes($generated)
-                $staged = $target + '.' + [guid]::NewGuid().ToString('N') + '.tmp'
-                [IO.File]::WriteAllBytes($staged, $bytes)
-                Move-Item -LiteralPath $staged -Destination $target -Force
+            $dungeonDir = Join-Path $storage "seed-dungeons-$($request.instance_id)-$($request.revision)"
+            $dungeonTarget = Join-Path $dungeonDir "$($request.x)_$($request.z).json"
+            $needsStructure = -not (Test-Path -LiteralPath $target -PathType Leaf)
+            $needsDungeons = ($request.dungeons -eq $true) -and -not (Test-Path -LiteralPath $dungeonTarget -PathType Leaf)
+            if ($needsStructure) {
+                Publish-GeneratedTile -Seed $metadata.seed -Radius $radius -TileX $request.x -TileZ $request.z -Destination $target
+            }
+            if ($needsDungeons) {
+                Publish-GeneratedTile -Seed $metadata.seed -Radius $radius -TileX $request.x -TileZ $request.z -Destination $dungeonTarget -DungeonsOnly
             }
             Remove-Item -LiteralPath $claim -Force
             Write-Host "Setor pronto: $($request.instance_id) $($request.x),$($request.z)"

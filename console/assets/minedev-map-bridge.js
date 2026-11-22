@@ -11,7 +11,7 @@
   window.MineDevMap = Object.freeze({ map, gameToMap, mapToGame, centerAt(x, z) { unmined.center([Number(x), Number(z)]); } });
   const css = document.createElement('link');
   css.rel = 'stylesheet';
-  css.href = 'minedev-map-bridge.css?v=20';
+  css.href = 'minedev-map-bridge.css?v=21';
   document.head.append(css);
 
   const panel = document.createElement('section');
@@ -253,17 +253,18 @@
     for (let z = z0; z <= z1; z++) for (let x = x0; x <= x1; x++) wanted.push({ x, z, distance: (x * seedTileSize + seedTileSize / 2 - center.x) ** 2 + (z * seedTileSize + seedTileSize / 2 - center.z) ** 2 });
     wanted.sort((a, b) => a.distance - b.distance);
     const viewportLimited = wanted.length > 16;
+    const includeDungeons = ['dungeon_zombie', 'dungeon_skeleton', 'dungeon_spider'].some((type) => enabledTypes.has(type));
     await Promise.all(wanted.slice(0, 16).map(async ({ x, z }) => {
       const key = `${x}_${z}`;
       if (seedTiles.has(key) || pendingSeedTiles.has(key)) return;
       pendingSeedTiles.add(key);
       try {
         let data = null;
-        for (let attempt = 0; attempt < 120; attempt++) {
-          const response = await fetch(`../../api.php?action=seed-tile&instance_id=${encodeURIComponent(instanceId)}&x=${x}&z=${z}`, { credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' } });
+        for (let attempt = 0; attempt < 360; attempt++) {
+          const response = await fetch(`../../api.php?action=seed-tile&instance_id=${encodeURIComponent(instanceId)}&x=${x}&z=${z}&dungeons=${includeDungeons ? '1' : '0'}`, { credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' } });
           if (response.status === 202) {
             if (attempt === 0) $('.minedev-seed-visible').textContent = 'Calculando os setores visíveis…';
-            await new Promise((resolve) => window.setTimeout(resolve, Math.max(1000, Number(response.headers.get('Retry-After') || 3) * 1000)));
+            await new Promise((resolve) => window.setTimeout(resolve, Math.max(1000, Number(response.headers.get('Retry-After') || 5) * 1000)));
             continue;
           }
           if (!response.ok) throw new Error(`Setor ${key}: HTTP ${response.status}`);
@@ -380,7 +381,7 @@
             return input;
           });
           parent.addEventListener('change', () => { for (const input of childInputs) { if (input.disabled) continue; input.checked = parent.checked; if (parent.checked) enabledTypes.add(input.dataset.type); else enabledTypes.delete(input.dataset.type); } parent.indeterminate = false; refreshPoints(); });
-          if (dungeonRadius) { const scope = document.createElement('p'); scope.className = 'minedev-seed-dungeon-scope'; scope.textContent = `Calculado até ±${dungeonRadius.toLocaleString('pt-BR')} blocos do centro`; group.append(scope); }
+          if (dungeonRadius) { const scope = document.createElement('p'); scope.className = 'minedev-seed-dungeon-scope'; scope.textContent = 'Geradas por setor no mapa, conforme a área é carregada'; group.append(scope); }
         } else {
           const input = makeRow(label, type, counts.get(type) || 0, available.has(type));
           input.addEventListener('change', () => { if (input.checked) enabledTypes.add(type); else enabledTypes.delete(type); refreshPoints(); });

@@ -411,30 +411,37 @@ if ($action === 'seed-tile') {
         json_response(['error' => ['code' => 'seed_tile_missing', 'message' => 'Setores da seed indisponíveis.']], 404);
     }
     $path = STORAGE_DIR . DIRECTORY_SEPARATOR . 'seed-tiles-' . $instanceId . '-' . $revision . DIRECTORY_SEPARATOR . $tileX . '_' . $tileZ . '.json';
-    if (!is_file($path)) {
+    $wantDungeons = (string)($_GET['dungeons'] ?? '') === '1';
+    $dungeonPath = STORAGE_DIR . DIRECTORY_SEPARATOR . 'seed-dungeons-' . $instanceId . '-' . $revision . DIRECTORY_SEPARATOR . $tileX . '_' . $tileZ . '.json';
+    if (!is_file($path) || ($wantDungeons && !is_file($dungeonPath))) {
         $queue = STORAGE_DIR . DIRECTORY_SEPARATOR . 'seed-jobs';
         if (!is_dir($queue) && !mkdir($queue, 0700, true) && !is_dir($queue)) {
             json_response(['error' => ['code' => 'seed_worker_unavailable', 'message' => 'Não foi possível criar a fila de cálculo.']], 503);
         }
-        $jobId = hash('sha256', $instanceId . ':' . $revision . ':' . $tileX . ':' . $tileZ);
+        $jobId = hash('sha256', $instanceId . ':' . $revision . ':' . $tileX . ':' . $tileZ . ':' . ($wantDungeons ? 'dungeons' : 'structures'));
         $jobPath = $queue . DIRECTORY_SEPARATOR . $jobId . '.json';
-        with_storage_lock(static function () use ($jobPath, $instanceId, $revision, $tileX, $tileZ): void {
+        with_storage_lock(static function () use ($jobPath, $instanceId, $revision, $tileX, $tileZ, $wantDungeons): void {
             if (is_file($jobPath)) return;
             $temp = $jobPath . '.' . bin2hex(random_bytes(6)) . '.tmp';
             $job = ['instance_id' => $instanceId, 'revision' => $revision, 'x' => $tileX, 'z' => $tileZ,
-                'created_at' => time(), 'status' => 'queued'];
+                'dungeons' => $wantDungeons, 'created_at' => time(), 'status' => 'queued'];
             if (file_put_contents($temp, json_encode($job, JSON_UNESCAPED_SLASHES), LOCK_EX) === false || !rename($temp, $jobPath)) {
                 @unlink($temp);
                 throw new RuntimeException('Não foi possível enfileirar o cálculo do setor.');
             }
             @chmod($jobPath, 0600);
         });
-        header('Retry-After: 3');
+        header('Retry-After: 5');
         json_response(['instance_id' => $instanceId, 'revision' => $revision, 'x' => $tileX, 'z' => $tileZ,
             'status' => 'queued', 'points' => []], 202);
     }
     $points = json_decode((string)file_get_contents($path), true);
     if (!is_array($points)) json_response(['error' => ['code' => 'seed_tile_invalid', 'message' => 'Setor calculado inválido.']], 500);
+    if ($wantDungeons) {
+        $dungeons = json_decode((string)file_get_contents($dungeonPath), true);
+        if (!is_array($dungeons)) json_response(['error' => ['code' => 'seed_dungeon_tile_invalid', 'message' => 'Masmorras do setor inválidas.']], 500);
+        $points = array_merge($points, $dungeons);
+    }
     json_response(['instance_id' => $instanceId, 'revision' => $revision, 'x' => $tileX, 'z' => $tileZ,
         'status' => 'ready', 'points' => $points]);
 }
