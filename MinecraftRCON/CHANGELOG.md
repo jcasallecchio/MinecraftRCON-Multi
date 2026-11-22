@@ -1,5 +1,8 @@
 # Histórico de versões
 
+## 0.3.9 — Corrige a compilação do gerador de recursos
+- Gera o arquivo de somas das dependências Go antes de compilar as camadas de cavernas, fósseis e veios, corrigindo a falha de atualização da versão 0.3.8 no Supervisor.
+
 ## 0.3.8 — Camadas de cavernas, fósseis e veios
 - Calcula cavernas, fósseis e veios de cobre/ferro por setor dentro do Home Assistant, sob demanda.
 - Usa um gerador Bedrock adicional fixado em revisão e mantém o worker sem executar cálculos no navegador ou no PC.

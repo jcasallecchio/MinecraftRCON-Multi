@@ -1,6 +1,6 @@
 {
   "name": "MinecraftRCON Multi",
-  "version": "0.3.8",
+  "version": "0.3.9",
   "slug": "minecraft_rcon_multi",
   "description": "Gerenciador de até cinco servidores Minecraft Bedrock simultâneos com RCON",
   "startup": "services",

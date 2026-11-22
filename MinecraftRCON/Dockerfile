@@ -15,7 +15,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
 FROM golang:1.26-bookworm AS feature-builder
 WORKDIR /src
 COPY go.mod seed_feature_tile.go ./
-RUN go mod download && \
+RUN go mod tidy && \
     go build -trimpath -ldflags="-s -w" -o /usr/local/bin/minedev-seed-features ./seed_feature_tile.go && \
     helix_data_dir="$(go list -m -f '{{.Dir}}' github.com/helix-bedrock/helix-data)" && \
     mkdir -p /tmp/helix-notices/worldgen /tmp/helix-notices/helix-data /tmp/minedev-seed-data && \
