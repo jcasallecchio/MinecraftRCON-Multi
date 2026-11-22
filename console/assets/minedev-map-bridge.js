@@ -11,7 +11,7 @@
   window.MineDevMap = Object.freeze({ map, gameToMap, mapToGame, centerAt(x, z) { unmined.center([Number(x), Number(z)]); } });
   const css = document.createElement('link');
   css.rel = 'stylesheet';
-  css.href = 'minedev-map-bridge.css?v=30';
+  css.href = 'minedev-map-bridge.css?v=31';
   document.head.append(css);
 
   const panel = document.createElement('section');
@@ -73,16 +73,6 @@
   const seedTiles = new Map();
   const pendingSeedTiles = new Set();
   const enabledTypes = new Set();
-  const seedMarkerStyles = {
-    spawn: ['#ffffff', 'S'], village: ['#63d471', 'V'], outpost: ['#ed6a5a', 'P'], desert_pyramid: ['#e6bd55', 'D'],
-    jungle_temple: ['#3ba272', 'T'], swamp_hut: ['#72a07a', 'C'], igloo: ['#bfe8ed', 'I'], ocean_ruin: ['#4b9cd3', 'R'],
-    shipwreck: ['#3577a8', 'N'], treasure: ['#ffd700', '$'], monument: ['#3755c5', 'M'], mansion: ['#864eaa', 'F'],
-    ruined_portal: ['#bd62d0', 'O'], ancient_city: ['#315c8c', 'A'], trail_ruins: ['#be7d47', 'U'],
-    trial_chambers: ['#4d76a8', 'X'], abandoned_camp: ['#a37c4b', 'A'], mineshaft: ['#d09b62', 'Mi'], ravine: ['#ef784b', 'R'],
-    geode: ['#cc74dc', 'G'], desert_well: ['#60bdba', 'W'], lava_lake: ['#f04427', 'L'],
-    dungeon_zombie: ['#72a36a', 'Z'], dungeon_skeleton: ['#d4d5ca', 'Es'], dungeon_spider: ['#68546d', 'Ar'],
-    fossil: ['#eee1c8', 'Fo'], ore_vein: ['#d7a834', 'Min'], cave: ['#9ca9b2', 'C'],
-  };
   const seedCatalog = [
     ['Spawn Point', 'spawn', 'spawn_point'], ['Slime Chunk', 'slime', 'slime_chunk'], ['Village', 'village', 'village'], ['Ancient City', 'ancient_city', 'ancient_city'],
     ['Dungeon', 'dungeon', 'dungeon'], ['Mansion', 'mansion', 'mansion'], ['Monument', 'monument', 'monument'], ['Outpost', 'outpost', 'outpost'],
@@ -94,6 +84,27 @@
     ['Trial Chamber', 'trial_chambers', 'trial_chamber'], ['Camp', 'abandoned_camp', 'camp'],
   ];
   const dungeonTypes = ['dungeon_zombie', 'dungeon_skeleton', 'dungeon_spider'];
+  const seedMarkerIcons = new Map(seedCatalog.map(([, type, iconFile]) => [type, iconFile]));
+  dungeonTypes.forEach((type) => seedMarkerIcons.set(type, 'dungeon'));
+  const seedMarkerStyleCache = new Map();
+  function getSeedMarkerStyle(type) {
+    const iconFile = seedMarkerIcons.get(type) || 'dungeon';
+    const resolution = map.getView().getResolution() || 1;
+    const scale = Math.max(0.45, Math.min(0.85, 3 / Math.sqrt(resolution)));
+    const cacheKey = `${iconFile}:${scale.toFixed(2)}`;
+    if (!seedMarkerStyleCache.has(cacheKey)) {
+      seedMarkerStyleCache.set(cacheKey, new ol.style.Style({
+        image: new ol.style.Icon({
+          src: new URL(`../../assets/icons/${iconFile}.png`, document.baseURI).href,
+          anchor: [0.5, 0.5],
+          anchorXUnits: 'fraction',
+          anchorYUnits: 'fraction',
+          scale,
+        }),
+      }));
+    }
+    return seedMarkerStyleCache.get(cacheKey);
+  }
   function notify(text, error = false) { message.textContent = text; message.classList.toggle('error', error); }
   function formatBiomeName(value) {
     return String(value || '').replaceAll('_', ' ').trim().toLowerCase().replace(/\b\p{L}/gu, (letter) => letter.toUpperCase());
@@ -224,11 +235,7 @@
     for (const item of visible.slice(0, limit)) {
       const feature = new ol.Feature({ geometry: new ol.geom.Point(gameToMap(item.x, item.z)) });
       feature.set('seedStructure', item);
-      const [color, icon] = seedMarkerStyles[item.type] || ['#f4c46f', item.name.slice(0, 1).toUpperCase()];
-      feature.setStyle(new ol.style.Style({
-        image: new ol.style.Circle({ radius: 8, fill: new ol.style.Fill({ color }), stroke: new ol.style.Stroke({ color: '#152018', width: 2 }) }),
-        text: new ol.style.Text({ text: icon, font: '700 8px system-ui,sans-serif', fill: new ol.style.Fill({ color: '#101810' }), stroke: new ol.style.Stroke({ color: '#ffffff99', width: 0.5 }) }),
-      }));
+      feature.setStyle(getSeedMarkerStyle(item.type));
       seedSource.addFeature(feature);
     }
   }
