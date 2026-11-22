@@ -310,67 +310,6 @@ if ($action === 'map-players') {
     json_response($snapshot);
 }
 
-if ($action === 'map-markers') {
-    if (!in_array($method, ['GET', 'PUT'], true)) {
-        header('Allow: GET, PUT');
-        json_response(['error' => ['code' => 'method_not_allowed', 'message' => 'Método não permitido.']], 405);
-    }
-    $instanceId = (string)($_GET['instance_id'] ?? '');
-    if (!preg_match('/^[a-z0-9][a-z0-9_-]{0,31}$/', $instanceId) || bedrock_instance_config($instanceId) === null) {
-        json_response(['error' => ['code' => 'invalid_instance', 'message' => 'Instância inválida.']], 400);
-    }
-    $path = STORAGE_DIR . DIRECTORY_SEPARATOR . 'map-markers-' . $instanceId . '.json';
-    $readMarkers = static function () use ($path): array {
-        if (!is_file($path)) return [];
-        $decoded = json_decode((string)file_get_contents($path), true);
-        return is_array($decoded) && array_is_list($decoded) ? $decoded : [];
-    };
-    if ($method === 'GET') {
-        $markers = with_storage_lock($readMarkers);
-        json_response(['markers' => $markers, 'revision' => hash('sha256', json_encode($markers))]);
-    }
-    $payload = read_payload();
-    $markers = $payload['markers'] ?? null;
-    if (!is_array($markers) || !array_is_list($markers) || count($markers) > 100) {
-        json_response(['error' => ['code' => 'invalid_markers', 'message' => 'Lista de marcadores inválida ou muito grande.']], 400);
-    }
-    $validated = [];
-    $seen = [];
-    foreach ($markers as $marker) {
-        if (!is_array($marker) || !isset($marker['id'], $marker['name'], $marker['x'], $marker['z']) ||
-            !is_string($marker['id']) || !preg_match('/^[a-f0-9]{16,32}$/', $marker['id']) || isset($seen[$marker['id']]) ||
-            !is_string($marker['name']) || trim($marker['name']) === '' ||
-            preg_match('//u', $marker['name']) !== 1 || preg_match_all('/./us', $marker['name']) > 64 ||
-            !is_numeric($marker['x']) || !is_numeric($marker['z']) ||
-            !is_finite((float)$marker['x']) || !is_finite((float)$marker['z']) ||
-            abs((float)$marker['x']) > 30000000 || abs((float)$marker['z']) > 30000000) {
-            json_response(['error' => ['code' => 'invalid_marker', 'message' => 'Um marcador contém nome ou coordenadas inválidas.']], 400);
-        }
-        $seen[$marker['id']] = true;
-        $validated[] = [
-            'id' => $marker['id'],
-            'name' => trim($marker['name']),
-            'x' => (int)round((float)$marker['x']),
-            'z' => (int)round((float)$marker['z']),
-        ];
-    }
-    $expectedRevision = (string)($payload['revision'] ?? '');
-    $result = with_storage_lock(static function () use ($readMarkers, $expectedRevision, $validated, $path): array {
-        $current = $readMarkers();
-        if (!hash_equals(hash('sha256', json_encode($current)), $expectedRevision)) return ['conflict' => true];
-        $temp = $path . '.' . bin2hex(random_bytes(6)) . '.tmp';
-        if (file_put_contents($temp, json_encode($validated, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), LOCK_EX) === false || !rename($temp, $path)) {
-            @unlink($temp);
-            throw new RuntimeException('Não foi possível salvar os marcadores.');
-        }
-        if (DIRECTORY_SEPARATOR !== '\\') @chmod($path, 0600);
-        return ['markers' => $validated, 'revision' => hash('sha256', json_encode($validated))];
-    });
-    if (isset($result['conflict'])) json_response(['error' => ['code' => 'markers_conflict', 'message' => 'Os marcadores mudaram em outra sessão. Recarregue a lista.']], 409);
-    audit_event(authenticated_actor(), 'map_markers_save', '', 'success', 'Instância ' . $instanceId . '; ' . count($validated) . ' marcadores');
-    json_response($result);
-}
-
 if ($action === 'seed-layer') {
     reject_method('GET');
     $instanceId = (string)($_GET['instance_id'] ?? '');

@@ -11,7 +11,7 @@
   window.MineDevMap = Object.freeze({ map, gameToMap, mapToGame, centerAt(x, z) { unmined.center([Number(x), Number(z)]); } });
   const css = document.createElement('link');
   css.rel = 'stylesheet';
-  css.href = 'minedev-map-bridge.css?v=21';
+  css.href = 'minedev-map-bridge.css?v=22';
   document.head.append(css);
 
   const panel = document.createElement('section');
@@ -19,17 +19,13 @@
   panel.setAttribute('aria-label', 'Ferramentas do mapa');
   panel.innerHTML = `<div class="minedev-map-heading"><strong>Explorar mundo</strong><button type="button" class="minedev-map-collapse" aria-label="Recolher ferramentas" aria-expanded="true">−</button></div>
     <div class="minedev-map-body"><form class="minedev-map-go"><label for="minedev-map-coordinates">Ir para coordenadas X, Z</label><div class="minedev-map-field"><input id="minedev-map-coordinates" autocomplete="off" placeholder="Ex.: 120, -350" maxlength="24"><button type="submit">Ir</button></div></form>
-    <form class="minedev-map-save"><label for="minedev-map-marker-name">Salvar marcador nesta posição</label><div class="minedev-map-field"><input id="minedev-map-marker-name" autocomplete="off" placeholder="Nome do local" maxlength="64"><button type="submit">Salvar</button></div></form>
-    <details class="minedev-map-markers"><summary>Meus marcadores <span class="minedev-map-count">0</span></summary><div class="minedev-map-marker-list"></div></details>
     <details class="minedev-live-players" open><summary>Jogadores ao vivo <span class="minedev-live-count">—</span></summary><p class="minedev-live-status">Consultando jogadores…</p><div class="minedev-live-list"></div></details>
     <details class="minedev-seed-details"><summary>Explorar pela seed <span class="minedev-seed-count"></span></summary><div class="minedev-seed-body"><p class="minedev-seed-status">Carregando dados da seed…</p><div class="minedev-seed-controls" hidden><details class="minedev-seed-biome-legend"><summary>Legenda de biomas</summary><div class="minedev-seed-biome-list"></div></details><details class="minedev-seed-types" open><summary>Locais e estruturas</summary><div class="minedev-seed-type-actions"><button type="button" class="minedev-seed-all">Todos disponíveis</button><button type="button" class="minedev-seed-none">Nenhum</button></div><div class="minedev-seed-type-list"></div></details><p class="minedev-seed-visible"></p><div class="minedev-seed-nearest-heading">Próximos do centro do mapa</div><div class="minedev-seed-nearest"></div></div></div></details>
     <div class="minedev-map-message" role="status" aria-live="polite"></div></div>`;
   document.body.append(panel);
   const $ = (selector) => panel.querySelector(selector);
   const coordinateInput = $('#minedev-map-coordinates');
-  const nameInput = $('#minedev-map-marker-name');
   const message = $('.minedev-map-message');
-  const list = $('.minedev-map-marker-list');
   const hud = document.createElement('output');
   hud.className = 'minedev-map-hud';
   hud.textContent = 'X — · Z —';
@@ -41,12 +37,6 @@
   popup.hidden = true;
   document.body.append(popup);
   let selected = null;
-  let markers = [];
-  let revision = '';
-  let csrf = '';
-  let busy = false;
-  const source = new ol.source.Vector();
-  map.addLayer(new ol.layer.Vector({ source, zIndex: 80 }));
   const liveSource = new ol.source.Vector();
   map.addLayer(new ol.layer.Vector({ source: liveSource, zIndex: 90 }));
   let liveRequestPending = false;
@@ -98,7 +88,7 @@
     const point = kind === 'player' ? item.position : item;
     if (!Number.isFinite(point?.x) || !Number.isFinite(point?.z)) return;
     const x = Math.floor(point.x), z = Math.floor(point.z);
-    const category = kind === 'structure' ? 'Local da seed' : kind === 'player' ? 'Jogador online' : 'Local salvo';
+    const category = kind === 'structure' ? 'Local da seed' : 'Jogador online';
     popup.replaceChildren();
     const heading = document.createElement('div'); heading.className = 'minedev-popup-heading';
     const label = document.createElement('span'); label.className = 'minedev-popup-category'; label.textContent = category;
@@ -127,20 +117,6 @@
     popup.append(actions);
     popup.hidden = false;
   }
-  function render() {
-    source.clear(); list.replaceChildren(); $('.minedev-map-count').textContent = String(markers.length);
-    if (!markers.length) { const empty = document.createElement('p'); empty.className = 'minedev-map-empty'; empty.textContent = 'Nenhum local salvo nesta instância.'; list.append(empty); }
-    for (const marker of markers) {
-      const feature = new ol.Feature({ geometry: new ol.geom.Point(gameToMap(marker.x, marker.z)) });
-      feature.set('savedMarker', marker);
-      feature.setStyle(new ol.style.Style({ image: new ol.style.Circle({ radius: 7, fill: new ol.style.Fill({ color: '#a8e36b' }), stroke: new ol.style.Stroke({ color: '#14251a', width: 2 }) }), text: new ol.style.Text({ text: marker.name, font: '600 13px sans-serif', offsetY: -20, fill: new ol.style.Fill({ color: '#f3ffe9' }), stroke: new ol.style.Stroke({ color: '#101a12', width: 4 }) }) }));
-      source.addFeature(feature);
-      const row = document.createElement('div'); row.className = 'minedev-map-marker-row';
-      const open = document.createElement('button'); open.type = 'button'; open.className = 'minedev-map-marker-go'; open.textContent = `${marker.name} · ${marker.x}, ${marker.z}`; open.title = 'Centralizar no marcador'; open.addEventListener('click', () => { go(marker); showMarkerDetails('saved', marker); });
-      const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'minedev-map-marker-remove'; remove.textContent = '×'; remove.setAttribute('aria-label', `Excluir marcador ${marker.name}`); remove.addEventListener('click', () => save(markers.filter((item) => item.id !== marker.id), 'Marcador excluído.'));
-      row.append(open, remove); list.append(row);
-    }
-  }
   function renderLivePlayers(data) {
     liveSource.clear();
     livePlayers = data.available && Array.isArray(data.players) ? data.players : [];
@@ -153,8 +129,7 @@
       return;
     }
     $('.minedev-live-count').textContent = String(data.online_count);
-    const sampled = new Date(data.sampled_at);
-    status.textContent = `RCON · amostra de ${Number.isNaN(sampled.getTime()) ? 'agora' : sampled.toLocaleTimeString('pt-BR')} · Y para jogador em pé`;
+    status.textContent = 'Jogadores ao vivo';
     if (!data.players.length) {
       const empty = document.createElement('p'); empty.className = 'minedev-map-empty'; empty.textContent = 'Nenhum jogador online.'; list.append(empty);
     }
@@ -409,43 +384,12 @@
       status.textContent = `${total.toLocaleString('pt-BR')} locais · ${data.biomes?.length || 0} biomas · ${Number(data.slime_chunks || 0).toLocaleString('pt-BR')} slime chunks · Bedrock ${seedGeneratorVersion}`;
     } catch (error) { status.textContent = error.message; }
   }
-  async function request(method, body) {
-    const options = { method, credentials: 'same-origin', headers: { Accept: 'application/json' } };
-    if (method !== 'GET') {
-      if (!csrf) { const response = await fetch('../../api.php?action=csrf', { credentials: 'same-origin' }); if (!response.ok) throw new Error('Sessão expirada. Entre novamente no MineDev.'); csrf = (await response.json()).csrf; }
-      options.headers['Content-Type'] = 'application/json'; options.headers['X-CSRF-Token'] = csrf; options.body = JSON.stringify(body);
-    }
-    const response = await fetch(`../../api.php?action=map-markers&instance_id=${encodeURIComponent(instanceId)}`, options);
-    const raw = await response.text();
-    let data;
-    try { data = JSON.parse(raw); } catch { throw new Error(`Falha HTTP ${response.status}. Recarregue o mapa e tente novamente.`); }
-    if (!response.ok) { if (response.status === 403) csrf = ''; throw new Error(data.error?.message || `Falha HTTP ${response.status}`); }
-    return data;
-  }
-  async function load() { try { const data = await request('GET'); markers = data.markers; revision = data.revision; render(); notify(''); } catch (error) { notify(error.message, true); } }
-  async function save(next, success) {
-    if (busy) return false; busy = true;
-    try { const data = await request('PUT', { revision, markers: next }); markers = data.markers; revision = data.revision; render(); notify(success); return true; }
-    catch (error) { notify(error.message, true); if (error.message.includes('mudaram em outra sessão')) await load(); }
-    finally { busy = false; }
-    return false;
-  }
   $('.minedev-map-go').addEventListener('submit', (event) => { event.preventDefault(); const point = parseCoordinates(coordinateInput.value); if (!point) return notify('Informe X e Z válidos, separados por vírgula ou espaço.', true); go(point); notify('Mapa centralizado nas coordenadas informadas.'); });
-  $('.minedev-map-save').addEventListener('submit', async (event) => {
-    event.preventDefault(); const point = coordinateInput.value.trim() ? parseCoordinates(coordinateInput.value) : selected; const name = nameInput.value.trim();
-    if (!point) return notify('Clique no mapa ou informe as coordenadas X, Z.', true);
-    if (!name) return notify('Informe um nome para o marcador.', true);
-    if (markers.length >= 100) return notify('Limite de 100 marcadores por instância.', true);
-    const id = Array.from(crypto.getRandomValues(new Uint8Array(16)), (v) => v.toString(16).padStart(2, '0')).join('');
-    if (await save([...markers, { id, name, x: point.x, z: point.z }], 'Marcador salvo.')) nameInput.value = '';
-  });
   $('.minedev-map-collapse').addEventListener('click', (event) => { panel.classList.toggle('collapsed'); const expanded = !panel.classList.contains('collapsed'); event.currentTarget.setAttribute('aria-expanded', String(expanded)); event.currentTarget.setAttribute('aria-label', expanded ? 'Recolher ferramentas' : 'Expandir ferramentas'); event.currentTarget.textContent = expanded ? '−' : '+'; });
   map.on('singleclick', (event) => {
-    const feature = map.forEachFeatureAtPixel(event.pixel, (candidate) => candidate.get('livePlayer') || candidate.get('seedStructure') || candidate.get('savedMarker') ? candidate : null, { hitTolerance: 8 });
+    const feature = map.forEachFeatureAtPixel(event.pixel, (candidate) => candidate.get('livePlayer') || candidate.get('seedStructure') ? candidate : null, { hitTolerance: 8 });
     const player = feature?.get('livePlayer');
     if (player) { select(player.position); showMarkerDetails('player', player); return; }
-    const saved = feature?.get('savedMarker');
-    if (saved) { select(saved); showMarkerDetails('saved', saved); return; }
     const item = feature?.get('seedStructure');
     if (item) { select(item); showMarkerDetails('structure', item); return; }
     closeMarkerDetails();
@@ -455,9 +399,8 @@
     const slime = seedSlimeLayer?.getVisible() && seedSlimeAt ? seedSlimeAt(point) : false;
     notify([biome && `Bioma em Y 64: ${biome}`, slime && 'Slime chunk'].filter(Boolean).join(' · '));
   });
-  map.on('pointermove', (event) => { if (!event.dragging) { const point = mapToGame(event.coordinate); hud.textContent = `X ${Math.floor(point.x)} · Z ${Math.floor(point.z)}`; const marker = map.forEachFeatureAtPixel(event.pixel, (candidate) => candidate.get('livePlayer') || candidate.get('seedStructure') || candidate.get('savedMarker') ? candidate : null, { hitTolerance: 8 }); map.getTargetElement().style.cursor = marker ? 'pointer' : ''; } });
+  map.on('pointermove', (event) => { if (!event.dragging) { const point = mapToGame(event.coordinate); hud.textContent = `X ${Math.floor(point.x)} · Z ${Math.floor(point.z)}`; const marker = map.forEachFeatureAtPixel(event.pixel, (candidate) => candidate.get('livePlayer') || candidate.get('seedStructure') ? candidate : null, { hitTolerance: 8 }); map.getTargetElement().style.cursor = marker ? 'pointer' : ''; } });
   document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closeMarkerDetails(); });
-  load();
   loadSeedLayer();
   loadLivePlayers();
   window.setInterval(() => { if (!document.hidden) loadLivePlayers(); }, 5000);
