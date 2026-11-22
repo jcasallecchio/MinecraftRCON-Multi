@@ -11,7 +11,7 @@
   window.MineDevMap = Object.freeze({ map, gameToMap, mapToGame, centerAt(x, z) { unmined.center([Number(x), Number(z)]); } });
   const css = document.createElement('link');
   css.rel = 'stylesheet';
-  css.href = 'minedev-map-bridge.css?v=23';
+  css.href = 'minedev-map-bridge.css?v=25';
   document.head.append(css);
 
   const panel = document.createElement('section');
@@ -20,7 +20,7 @@
   panel.innerHTML = `<div class="minedev-map-heading"><strong>Explorar mundo</strong><button type="button" class="minedev-map-collapse" aria-label="Recolher ferramentas" aria-expanded="true">−</button></div>
     <div class="minedev-map-body"><form class="minedev-map-go"><label for="minedev-map-coordinates">Ir para coordenadas X, Z</label><div class="minedev-map-field"><input id="minedev-map-coordinates" autocomplete="off" placeholder="Ex.: 120, -350" maxlength="24"><button type="submit">Ir</button></div></form>
     <details class="minedev-live-players" open><summary>Jogadores ao vivo <span class="minedev-live-count">—</span></summary><p class="minedev-live-status">Consultando jogadores…</p><div class="minedev-live-list"></div></details>
-    <details class="minedev-seed-details"><summary>Explorar pela seed <span class="minedev-seed-count"></span></summary><div class="minedev-seed-body"><p class="minedev-seed-status">Carregando dados da seed…</p><div class="minedev-seed-controls" hidden><details class="minedev-seed-biome-legend"><summary>Legenda de biomas</summary><div class="minedev-seed-biome-list"></div></details><details class="minedev-seed-types" open><summary>Locais e estruturas</summary><div class="minedev-seed-type-actions"><button type="button" class="minedev-seed-all">Todos disponíveis</button><button type="button" class="minedev-seed-none">Nenhum</button></div><div class="minedev-seed-type-list"></div></details><p class="minedev-seed-visible"></p><div class="minedev-seed-nearest-heading">Próximos do centro do mapa</div><div class="minedev-seed-nearest"></div></div></div></details>
+    <details class="minedev-seed-details"><summary>Explorar pela seed <span class="minedev-seed-count"></span></summary><div class="minedev-seed-body"><p class="minedev-seed-status">Carregando dados da seed…</p><div class="minedev-seed-controls" hidden><details class="minedev-seed-biome-legend"><summary>Legenda de biomas</summary><div class="minedev-seed-biome-list"></div></details><details class="minedev-seed-types" open><summary>Locais e estruturas</summary><div class="minedev-seed-type-actions"><button type="button" class="minedev-seed-all">Todos disponíveis</button><button type="button" class="minedev-seed-none">Nenhum</button></div><div class="minedev-seed-type-list"></div></details></div></div></details>
     <div class="minedev-map-message" role="status" aria-live="polite"></div></div>`;
   document.body.append(panel);
   const $ = (selector) => panel.querySelector(selector);
@@ -44,7 +44,6 @@
   let seedSource = null;
   let seedImageLayer = null;
   let seedSlimeLayer = null;
-  let seedStructureLayer = null;
   let seedBiomeAt = null;
   let seedSlimeAt = null;
   let livePlayers = [];
@@ -196,24 +195,6 @@
       }));
       seedSource.addFeature(feature);
     }
-    $('.minedev-seed-visible').textContent = visible.length > limit ? `${limit.toLocaleString('pt-BR')} de ${visible.length.toLocaleString('pt-BR')} locais nesta área · aproxime o mapa para ver todos` : `${visible.length.toLocaleString('pt-BR')} locais nesta área`;
-    renderSeedNearest();
-  }
-  function renderSeedNearest() {
-    const list = $('.minedev-seed-nearest');
-    list.replaceChildren();
-    if (!seedStructureLayer || !seedStructureLayer.getVisible()) return;
-    const center = mapToGame(map.getView().getCenter());
-    const nearest = seedStructures.filter((item) => enabledTypes.has(item.type))
-      .map((item) => ({ item, distance: Math.hypot(item.x - center.x, item.z - center.z) }))
-      .sort((a, b) => a.distance - b.distance).slice(0, 10);
-    if (!nearest.length) { const empty = document.createElement('p'); empty.className = 'minedev-map-empty'; empty.textContent = 'Nenhuma estrutura no filtro.'; list.append(empty); }
-    for (const { item, distance } of nearest) {
-      const button = document.createElement('button'); button.type = 'button'; button.className = 'minedev-seed-nearest-item';
-      button.textContent = `${item.name} · ${item.x}, ${item.z} · ${Math.round(distance)} blocos`;
-      button.addEventListener('click', () => { go(item); showMarkerDetails('structure', item); });
-      list.append(button);
-    }
   }
   async function loadSeedTiles() {
     if (!seedTileRevision || !seedTileSize || !enabledTypes.size) return;
@@ -227,7 +208,6 @@
     const wanted = [];
     for (let z = z0; z <= z1; z++) for (let x = x0; x <= x1; x++) wanted.push({ x, z, distance: (x * seedTileSize + seedTileSize / 2 - center.x) ** 2 + (z * seedTileSize + seedTileSize / 2 - center.z) ** 2 });
     wanted.sort((a, b) => a.distance - b.distance);
-    const viewportLimited = wanted.length > 16;
     const includeDungeons = ['dungeon_zombie', 'dungeon_skeleton', 'dungeon_spider'].some((type) => enabledTypes.has(type));
     const includeFeatures = ['fossil', 'cave', 'ore_vein'].some((type) => enabledTypes.has(type));
     await Promise.all(wanted.slice(0, 16).map(async ({ x, z }) => {
@@ -240,7 +220,6 @@
         for (let attempt = 0; attempt < 360; attempt++) {
           const response = await fetch(`../../api.php?action=seed-tile&instance_id=${encodeURIComponent(instanceId)}&x=${x}&z=${z}&dungeons=${includeDungeons ? '1' : '0'}&features=${includeFeatures ? '1' : '0'}`, { credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' } });
           if (response.status === 202) {
-            if (attempt === 0) $('.minedev-seed-visible').textContent = includeFeatures ? 'Calculando cavernas, fósseis e veios nos setores visíveis pelo Home Assistant…' : 'Calculando os setores visíveis…';
             await new Promise((resolve) => window.setTimeout(resolve, Math.max(1000, Number(response.headers.get('Retry-After') || 5) * 1000)));
             continue;
           }
@@ -252,12 +231,11 @@
         if (data.revision !== seedTileRevision || data.instance_id !== instanceId || !Array.isArray(data.points)) throw new Error('Setor da seed inválido.');
         seedTiles.set(key, data.points.filter((item) => typeof item.type === 'string' && typeof item.name === 'string' && Number.isFinite(item.x) && Number.isFinite(item.z)));
         if (seedTiles.size > 192) seedTiles.delete(seedTiles.keys().next().value);
-      } catch (error) { $('.minedev-seed-visible').textContent = error.message; }
+      } catch (error) { notify(error.message, true); }
       finally { pendingSeedTiles.delete(key); }
     }));
     seedStructures = [...seedTiles.values()].flat();
     renderSeedStructures();
-    if (viewportLimited) $('.minedev-seed-visible').textContent += ' · aproxime para carregar os demais setores';
   }
   async function loadSeedLayer() {
     const status = $('.minedev-seed-status');
@@ -321,8 +299,7 @@
         enableSlime = () => { seedSlimeLayer.setVisible(true); if (!slimePreview.src) slimePreview.src = data.slime_url; };
       }
       seedSource = new ol.source.Vector();
-      seedStructureLayer = new ol.layer.Vector({ source: seedSource, zIndex: 70 });
-      map.addLayer(seedStructureLayer);
+      map.addLayer(new ol.layer.Vector({ source: seedSource, zIndex: 70 }));
       const counts = new Map(Object.entries(data.structure_counts || {}));
       if (!counts.size) for (const item of seedStructures) counts.set(item.type, (counts.get(item.type) || 0) + 1);
       const available = new Set(Array.isArray(data.types) ? data.types.map((item) => item.type) : seedStructures.map((item) => item.type));

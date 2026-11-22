@@ -29,7 +29,7 @@ div.minedev-live-row{border:1px solid #2b4037;border-radius:6px;background:#1723
 .minedev-seed-count{display:inline-grid;place-items:center;min-width:17px;height:17px;margin-left:4px;padding:0 4px;border-radius:5px;background:#473925;color:#f4c46f;font-size:11px}
 .minedev-seed-count:empty{display:none}
 .minedev-seed-body{margin-top:8px}
-.minedev-seed-status,.minedev-seed-visible{margin:5px 0 8px;color:#9fb7a3;font-size:11px}
+.minedev-seed-status{margin:5px 0 8px;color:#9fb7a3;font-size:11px}
 .minedev-seed-controls>label,.minedev-seed-type-list label{display:flex;align-items:center;gap:6px;min-height:24px;font-size:12px;color:#d7e8d4}
 .minedev-seed-controls>label[hidden]{display:none}
 .minedev-seed-controls input{accent-color:#a8e36b}
@@ -50,9 +50,6 @@ div.minedev-live-row{border:1px solid #2b4037;border-radius:6px;background:#1723
 .minedev-seed-type-icon{display:grid;place-items:center;width:15px;height:15px;border:1px solid color-mix(in srgb,var(--seed-marker-color),white 25%);border-radius:50%;background:var(--seed-marker-color);color:#101810;font:700 7px/1 system-ui,sans-serif;font-style:normal}
 .minedev-seed-type-actions{display:flex;gap:6px;margin:8px 0}
 .minedev-seed-type-actions button{padding:4px 9px;font-size:11px}
-.minedev-seed-nearest-heading{margin:10px 0 5px;color:#b9d3af;font-size:11px;font-weight:700}
-.minedev-seed-nearest{max-height:150px;overflow:auto}
-.minedev-seed-nearest-item{display:block;width:100%;margin:3px 0;padding:5px 7px;text-align:left;font-size:11px!important}
 .minedev-map-message{min-height:0;margin-top:7px;color:#b8de9d;font-size:11px}
 .minedev-map-message:empty{display:none}
 .minedev-map-message.error{color:#f2a4a0}
