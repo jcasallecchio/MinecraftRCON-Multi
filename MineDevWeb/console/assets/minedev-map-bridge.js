@@ -6,12 +6,13 @@
   if (!match) throw new Error('Instância do mapa não identificada.');
   const instanceId = match[1].toLowerCase();
   const map = unmined.olMap;
+  const snapshotLayer = map.getLayers().item(0);
   const gameToMap = (x, z) => ol.proj.transform([Number(x), Number(z)], unmined.dataProjection, unmined.viewProjection);
   const mapToGame = (point) => { const [x, z] = ol.proj.transform(point, unmined.viewProjection, unmined.dataProjection); return { x, z }; };
   window.MineDevMap = Object.freeze({ map, gameToMap, mapToGame, centerAt(x, z) { unmined.center([Number(x), Number(z)]); } });
   const css = document.createElement('link');
   css.rel = 'stylesheet';
-  css.href = 'minedev-map-bridge.css?v=34';
+  css.href = 'minedev-map-bridge.css?v=37';
   document.head.append(css);
 
   const panel = document.createElement('section');
@@ -36,10 +37,9 @@
   const structureModal = document.createElement('dialog');
   structureModal.className = 'minedev-structure-modal';
   structureModal.setAttribute('aria-labelledby', 'minedev-structure-title');
-  structureModal.innerHTML = '<header class="minedev-structure-modal-head"><strong id="minedev-structure-title">Locais e estruturas</strong><button type="button" class="minedev-structure-close" aria-label="Fechar">×</button></header><button type="button" class="minedev-biome-toggle" role="switch" aria-label="Biomas" aria-checked="true"><span class="minedev-biome-toggle-label"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="6" r="2.2"/><path d="m3 19 6.2-7 4.2 4.2 2.7-3 4.9 5.8H3Z"/></svg><span>Biomas</span></span><span class="minedev-switch-track"><span></span></span></button><p class="minedev-structure-status" hidden></p><div class="minedev-structure-grid" role="group" aria-label="Filtros de estruturas"></div>';
+  structureModal.innerHTML = '<header class="minedev-structure-modal-head"><strong id="minedev-structure-title">Locais e estruturas</strong><button type="button" class="minedev-structure-close" aria-label="Fechar">×</button></header><p class="minedev-structure-status" hidden></p><div class="minedev-structure-grid" role="group" aria-label="Filtros de estruturas"></div>';
   document.body.append(structureModal);
   const structureGrid = structureModal.querySelector('.minedev-structure-grid');
-  const biomeToggle = structureModal.querySelector('.minedev-biome-toggle');
   const structureStatus = structureModal.querySelector('.minedev-structure-status');
   const hud = document.createElement('output');
   hud.className = 'minedev-map-hud';
@@ -65,6 +65,7 @@
   let seedSource = null;
   let seedImageLayer = null;
   let biomeLayerEnabled = true;
+  let biomeButton = null;
   let seedSlimeLayer = null;
   let seedBiomeAt = null;
   let seedSlimeAt = null;
@@ -78,11 +79,14 @@
   function setBiomeLayerEnabled(enabled) {
     biomeLayerEnabled = Boolean(enabled);
     seedImageLayer?.setVisible(biomeLayerEnabled);
-    biomeToggle.setAttribute('aria-checked', String(biomeLayerEnabled));
-    biomeToggle.classList.toggle('is-off', !biomeLayerEnabled);
+    snapshotLayer?.setVisible(biomeLayerEnabled);
+    if (biomeButton) {
+      biomeButton.setAttribute('aria-pressed', String(biomeLayerEnabled));
+      biomeButton.classList.toggle('is-active', biomeLayerEnabled);
+    }
   }
-  biomeToggle.addEventListener('click', () => setBiomeLayerEnabled(!biomeLayerEnabled));
   const seedCatalog = [
+    ['Biomas', 'biomes', 'biomes.svg'],
     ['Spawn Point', 'spawn', 'spawn_point'], ['Slime Chunk', 'slime', 'slime_chunk'], ['Village', 'village', 'village'], ['Ancient City', 'ancient_city', 'ancient_city'],
     ['Dungeon', 'dungeon', 'dungeon'], ['Mansion', 'mansion', 'mansion'], ['Monument', 'monument', 'monument'], ['Outpost', 'outpost', 'outpost'],
     ['Mineshaft', 'mineshaft', 'mineshaft'], ['Ruined Portal', 'ruined_portal', 'ruined_portal'], ['Jungle Temple', 'jungle_temple', 'jungle_temple'],
@@ -96,6 +100,7 @@
   const seedMarkerIcons = new Map(seedCatalog.map(([, type, iconFile]) => [type, iconFile]));
   dungeonTypes.forEach((type) => seedMarkerIcons.set(type, 'dungeon'));
   const seedMarkerStyleCache = new Map();
+  const iconAssetPath = (iconFile) => '../../assets/icons/' + (/\.[a-z0-9]+$/i.test(iconFile) ? iconFile : iconFile + '.png');
   function getSeedMarkerStyle(type) {
     const iconFile = seedMarkerIcons.get(type) || 'dungeon';
     const resolution = map.getView().getResolution() || 1;
@@ -104,7 +109,7 @@
     if (!seedMarkerStyleCache.has(cacheKey)) {
       seedMarkerStyleCache.set(cacheKey, new ol.style.Style({
         image: new ol.style.Icon({
-          src: new URL(`../../assets/icons/${iconFile}.png`, document.baseURI).href,
+          src: new URL(iconAssetPath(iconFile), document.baseURI).href,
           anchor: [0.5, 0.5],
           anchorXUnits: 'fraction',
           anchorYUnits: 'fraction',
@@ -382,28 +387,35 @@
       structureGrid.replaceChildren();
       for (const [label, type, iconFile] of seedCatalog) {
         const members = type === 'dungeon' ? dungeonTypes : [type];
-        const supported = type === 'slime' ? Boolean(seedSlimeLayer) : members.some((member) => available.has(member));
+        const supported = type === 'biomes' ? true : type === 'slime' ? Boolean(seedSlimeLayer) : members.some((member) => available.has(member));
         const count = type === 'dungeon'
           ? dungeonTypes.reduce((sum, member) => sum + Number(counts.get(member) || 0), 0)
-          : Number(type === 'slime' ? data.slime_chunks || 0 : counts.get(type) || 0);
+          : Number(type === 'biomes' ? 0 : type === 'slime' ? data.slime_chunks || 0 : counts.get(type) || 0);
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'minedev-structure-tile';
-        button.setAttribute('aria-pressed', 'false');
+        button.setAttribute('aria-pressed', String(type === 'biomes' ? biomeLayerEnabled : false));
+        if (type === 'biomes') {
+          biomeButton = button;
+          button.classList.toggle('is-active', biomeLayerEnabled);
+        }
         button.disabled = !supported;
         const image = document.createElement('img');
-        image.src = `../../assets/icons/${iconFile}.png`;
+        image.src = iconAssetPath(iconFile);
         image.alt = '';
         image.loading = 'lazy';
         const name = document.createElement('span');
         name.textContent = label;
         button.append(image, name);
         button.title = supported ? `${label} · ${generatedByTile.has(type) ? 'Calculado por setor' : count.toLocaleString('pt-BR')}` : `${label} · cálculo indisponível`;
+        if (type === 'biomes') button.title = 'Mostrar ou ocultar biomas e terreno explorado';
         button.addEventListener('click', () => {
           const active = button.getAttribute('aria-pressed') !== 'true';
           button.setAttribute('aria-pressed', String(active));
           button.classList.toggle('is-active', active);
-          if (type === 'slime') {
+          if (type === 'biomes') {
+            setBiomeLayerEnabled(active);
+          } else if (type === 'slime') {
             if (active) enableSlime(); else seedSlimeLayer?.setVisible(false);
           } else {
             for (const member of members) {
