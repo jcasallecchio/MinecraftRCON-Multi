@@ -11,7 +11,7 @@
   window.MineDevMap = Object.freeze({ map, gameToMap, mapToGame, centerAt(x, z) { unmined.center([Number(x), Number(z)]); } });
   const css = document.createElement('link');
   css.rel = 'stylesheet';
-  css.href = 'minedev-map-bridge.css?v=33';
+  css.href = 'minedev-map-bridge.css?v=34';
   document.head.append(css);
 
   const panel = document.createElement('section');
