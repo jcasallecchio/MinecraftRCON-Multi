@@ -130,6 +130,22 @@
   function select(point) { selected = { x: Math.floor(point.x), z: Math.floor(point.z) }; coordinateInput.value = `${selected.x}, ${selected.z}`; hud.textContent = `X ${selected.x} · Z ${selected.z}`; }
   function go(point) { select(point); unmined.center([selected.x, selected.z]); unmined.placeRedDotMarker([selected.x, selected.z]); }
   function closeMarkerDetails() { popup.hidden = true; popup.replaceChildren(); }
+  function positionSeedPopup() {
+    if (popup.hidden || !popup.classList.contains('is-seed-location')) return;
+    const panelRect = panel.getBoundingClientRect();
+    const popupWidth = popup.getBoundingClientRect().width;
+    const left = Math.max(8, Math.min(panelRect.left, window.innerWidth - popupWidth - 8));
+    const top = panelRect.bottom + window.scrollY + 8;
+    popup.style.left = `${left + window.scrollX}px`;
+    popup.style.right = 'auto';
+    popup.style.top = `${top}px`;
+    popup.style.bottom = 'auto';
+    popup.style.maxHeight = `${Math.max(64, window.innerHeight - panelRect.bottom - 16)}px`;
+  }
+  if (typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(positionSeedPopup).observe(panel);
+  }
+  window.addEventListener('resize', positionSeedPopup);
   function showMarkerDetails(kind, item) {
     const point = kind === 'player' ? item.position : item;
     if (!Number.isFinite(point?.x) || !Number.isFinite(point?.z)) return;
@@ -161,7 +177,16 @@
     actions.append(copy, center);
     popup.append(heading, name, details);
     popup.append(actions);
+    popup.classList.toggle('is-seed-location', kind === 'structure');
+    if (kind !== 'structure') {
+      popup.style.left = '';
+      popup.style.right = '';
+      popup.style.top = '';
+      popup.style.bottom = '';
+      popup.style.maxHeight = '';
+    }
     popup.hidden = false;
+    if (kind === 'structure') requestAnimationFrame(positionSeedPopup);
   }
   function renderLivePlayers(data) {
     liveSource.clear();
