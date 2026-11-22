@@ -375,7 +375,7 @@
       map.on('moveend', () => { if (seedTileRevision && enabledTypes.size) loadSeedTiles(); else renderSeedStructures(); });
       const total = Number(data.structure_total ?? seedStructures.length);
       status.textContent = `${total.toLocaleString('pt-BR')} locais · ${data.biomes?.length || 0} biomas · Bedrock ${seedGeneratorVersion}`;
-      structureStatus.textContent = `${seedCatalog.length} filtros disponíveis · ${total.toLocaleString('pt-BR')} locais`;
+      structureStatus.textContent = `${seedCatalog.length} tipos · ${total.toLocaleString('pt-BR')} locais calculados`;
     } catch (error) { status.textContent = error.message; }
   }
   $('.minedev-map-go').addEventListener('submit', (event) => { event.preventDefault(); const point = parseCoordinates(coordinateInput.value); if (!point) return notify('Informe X e Z válidos, separados por vírgula ou espaço.', true); go(point); notify('Mapa centralizado nas coordenadas informadas.'); });
