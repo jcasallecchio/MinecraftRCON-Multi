@@ -11,7 +11,7 @@
   window.MineDevMap = Object.freeze({ map, gameToMap, mapToGame, centerAt(x, z) { unmined.center([Number(x), Number(z)]); } });
   const css = document.createElement('link');
   css.rel = 'stylesheet';
-  css.href = 'minedev-map-bridge.css?v=25';
+  css.href = 'minedev-map-bridge.css?v=27';
   document.head.append(css);
 
   const panel = document.createElement('section');
@@ -20,7 +20,7 @@
   panel.innerHTML = `<div class="minedev-map-heading"><strong>Explorar mundo</strong><button type="button" class="minedev-map-collapse" aria-label="Recolher ferramentas" aria-expanded="true">−</button></div>
     <div class="minedev-map-body"><form class="minedev-map-go"><label for="minedev-map-coordinates">Ir para coordenadas X, Z</label><div class="minedev-map-field"><input id="minedev-map-coordinates" autocomplete="off" placeholder="Ex.: 120, -350" maxlength="24"><button type="submit">Ir</button></div></form>
     <details class="minedev-live-players" open><summary>Jogadores ao vivo <span class="minedev-live-count">—</span></summary><p class="minedev-live-status">Consultando jogadores…</p><div class="minedev-live-list"></div></details>
-    <details class="minedev-seed-details"><summary>Explorar pela seed <span class="minedev-seed-count"></span></summary><div class="minedev-seed-body"><p class="minedev-seed-status">Carregando dados da seed…</p><div class="minedev-seed-controls" hidden><details class="minedev-seed-biome-legend"><summary>Legenda de biomas</summary><div class="minedev-seed-biome-list"></div></details><details class="minedev-seed-types" open><summary>Locais e estruturas</summary><div class="minedev-seed-type-actions"><button type="button" class="minedev-seed-all">Todos disponíveis</button><button type="button" class="minedev-seed-none">Nenhum</button></div><div class="minedev-seed-type-list"></div></details></div></div></details>
+    <details class="minedev-seed-details"><summary>Explorar pela seed <span class="minedev-seed-count"></span></summary><div class="minedev-seed-body"><p class="minedev-seed-status">Carregando dados da seed…</p><div class="minedev-seed-controls" hidden><details class="minedev-seed-types" open><summary>Locais e estruturas</summary><div class="minedev-seed-type-actions"><button type="button" class="minedev-seed-all">Todos disponíveis</button><button type="button" class="minedev-seed-none">Nenhum</button></div><div class="minedev-seed-type-list"></div></details></div></div></details>
     <div class="minedev-map-message" role="status" aria-live="polite"></div></div>`;
   document.body.append(panel);
   const $ = (selector) => panel.querySelector(selector);
@@ -36,6 +36,12 @@
   popup.setAttribute('aria-label', 'Detalhes do marcador');
   popup.hidden = true;
   document.body.append(popup);
+  const biomeTooltip = document.createElement('div');
+  biomeTooltip.className = 'minedev-map-biome-tooltip';
+  biomeTooltip.hidden = true;
+  biomeTooltip.setAttribute('role', 'status');
+  document.body.append(biomeTooltip);
+  let biomeTooltipTimer = 0;
   let selected = null;
   const liveSource = new ol.source.Vector();
   map.addLayer(new ol.layer.Vector({ source: liveSource, zIndex: 90 }));
@@ -74,6 +80,21 @@
     ['Trial Chamber', 'trial_chambers'], ['Camp', 'abandoned_camp'],
   ];
   function notify(text, error = false) { message.textContent = text; message.classList.toggle('error', error); }
+  function formatBiomeName(value) {
+    return String(value || '').replaceAll('_', ' ').trim().toLowerCase().replace(/\b\p{L}/gu, (letter) => letter.toUpperCase());
+  }
+  function showBiomeTooltip(name, pixel) {
+    if (!name) { biomeTooltip.hidden = true; return; }
+    biomeTooltip.textContent = formatBiomeName(name);
+    biomeTooltip.hidden = false;
+    const rect = map.getViewport().getBoundingClientRect();
+    const x = rect.left + pixel[0], y = rect.top + pixel[1];
+    const width = biomeTooltip.offsetWidth, height = biomeTooltip.offsetHeight;
+    biomeTooltip.style.left = `${Math.max(8, Math.min(window.innerWidth - width - 8, x + 12))}px`;
+    biomeTooltip.style.top = `${Math.max(8, Math.min(window.innerHeight - height - 8, y + 12))}px`;
+    window.clearTimeout(biomeTooltipTimer);
+    biomeTooltipTimer = window.setTimeout(() => { biomeTooltip.hidden = true; }, 2600);
+  }
   function parseCoordinates(value) {
     const match = /^\s*(-?\d{1,8})\s*[,;\s]\s*(-?\d{1,8})\s*$/.exec(value);
     if (!match) return null;
@@ -100,7 +121,7 @@
     addDetail('Dimensão', 'Overworld');
     if (kind !== 'player') {
       const biome = seedBiomeAt?.({ x, z });
-      if (biome) addDetail('Bioma em Y 64', biome);
+      if (biome) addDetail('Bioma em Y 64', formatBiomeName(biome));
       const nearest = livePlayers.filter((player) => player.position?.dimension === 0 && Number.isFinite(player.position.x) && Number.isFinite(player.position.z))
         .map((player) => ({ name: player.name, distance: Math.round(Math.hypot(player.position.x - x, player.position.z - z)) }))
         .sort((a, b) => a.distance - b.distance)[0];
@@ -259,13 +280,6 @@
       map.addLayer(seedImageLayer);
       const biomeNames = new Map((data.biomes || []).filter((biome) => typeof biome.color === 'string' && typeof biome.name === 'string')
         .map((biome) => [biome.color.toLowerCase(), biome.name.replaceAll('_', ' ')]));
-      const legend = $('.minedev-seed-biome-list');
-      for (const biome of [...(data.biomes || [])].sort((a, b) => b.samples - a.samples)) {
-        const row = document.createElement('div'); row.className = 'minedev-seed-biome-row';
-        const swatch = document.createElement('i'); swatch.style.backgroundColor = biome.color;
-        const label = document.createElement('span'); label.textContent = biome.name.replaceAll('_', ' ');
-        row.append(swatch, label); legend.append(row);
-      }
       const preview = new Image();
       preview.addEventListener('load', () => {
         const canvas = document.createElement('canvas'); canvas.width = 1; canvas.height = 1;
@@ -364,6 +378,7 @@
   $('.minedev-map-go').addEventListener('submit', (event) => { event.preventDefault(); const point = parseCoordinates(coordinateInput.value); if (!point) return notify('Informe X e Z válidos, separados por vírgula ou espaço.', true); go(point); notify('Mapa centralizado nas coordenadas informadas.'); });
   $('.minedev-map-collapse').addEventListener('click', (event) => { panel.classList.toggle('collapsed'); const expanded = !panel.classList.contains('collapsed'); event.currentTarget.setAttribute('aria-expanded', String(expanded)); event.currentTarget.setAttribute('aria-label', expanded ? 'Recolher ferramentas' : 'Expandir ferramentas'); event.currentTarget.textContent = expanded ? '−' : '+'; });
   map.on('singleclick', (event) => {
+    biomeTooltip.hidden = true;
     const feature = map.forEachFeatureAtPixel(event.pixel, (candidate) => candidate.get('livePlayer') || candidate.get('seedStructure') ? candidate : null, { hitTolerance: 8 });
     const player = feature?.get('livePlayer');
     if (player) { select(player.position); showMarkerDetails('player', player); return; }
@@ -374,7 +389,8 @@
     select(point);
     const biome = seedImageLayer?.getVisible() && seedBiomeAt ? seedBiomeAt(point) : null;
     const slime = seedSlimeLayer?.getVisible() && seedSlimeAt ? seedSlimeAt(point) : false;
-    notify([biome && `Bioma em Y 64: ${biome}`, slime && 'Slime chunk'].filter(Boolean).join(' · '));
+    showBiomeTooltip(biome, event.pixel);
+    notify(slime ? 'Slime chunk' : '');
   });
   map.on('pointermove', (event) => { if (!event.dragging) { const point = mapToGame(event.coordinate); hud.textContent = `X ${Math.floor(point.x)} · Z ${Math.floor(point.z)}`; const marker = map.forEachFeatureAtPixel(event.pixel, (candidate) => candidate.get('livePlayer') || candidate.get('seedStructure') ? candidate : null, { hitTolerance: 8 }); map.getTargetElement().style.cursor = marker ? 'pointer' : ''; } });
   document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closeMarkerDetails(); });
