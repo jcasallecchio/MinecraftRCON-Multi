@@ -135,8 +135,16 @@ try {
     New-Item -ItemType Directory -Path $mapsRoot -Force | Out-Null
     $stagePath = Assert-ChildPath (Join-Path $mapsRoot ".stage-$InstanceId-$([guid]::NewGuid().ToString('N'))") $mapsRoot
     $null = & $RendererPath web render "--world=$snapshotPath" "--output=$stagePath" --dimension=overworld --imageformat=png --zoomout=5 --zoomin=3 --chunkprocessors=2
-    if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath (Join-Path $stagePath 'index.html') -PathType Leaf)) {
+    if ($LASTEXITCODE -ne 0) {
         throw "uNmINeD não conseguiu renderizar o mundo (código $LASTEXITCODE). O mapa anterior será preservado."
+    }
+    $indexPath = Join-Path $stagePath 'index.html'
+    $alternateIndex = Join-Path $stagePath 'unmined.index.html'
+    if (-not (Test-Path -LiteralPath $indexPath -PathType Leaf) -and (Test-Path -LiteralPath $alternateIndex -PathType Leaf)) {
+        Move-Item -LiteralPath $alternateIndex -Destination $indexPath
+    }
+    if (-not (Test-Path -LiteralPath $indexPath -PathType Leaf)) {
+        throw 'uNmINeD não produziu index.html nem unmined.index.html. O mapa anterior será preservado.'
     }
 
     # Keep MineDev integrations and per-instance markers outside the generated export.
@@ -184,7 +192,6 @@ try {
         [System.IO.File]::WriteAllText($propertiesPath, $properties, [System.Text.UTF8Encoding]::new($false))
     }
 
-    $indexPath = Join-Path $stagePath 'index.html'
     $mapHtml = [System.IO.File]::ReadAllText($indexPath)
     if (-not $mapHtml.Contains('</body>')) { throw 'O exportador mudou o HTML do mapa; a integração não foi instalada.' }
     $mapHtml = $mapHtml.Replace('</body>', "    <script src=`"minedev-map-bridge.js?v=23`"></script>`r`n</body>")

@@ -1,6 +1,6 @@
 {
   "name": "MineDev Web",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "slug": "minedev_web",
   "description": "Hospedagem PHP/Apache do MineDev Console para MinecraftRCON Multi",
   "startup": "services",

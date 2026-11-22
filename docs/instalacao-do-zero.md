@@ -6,7 +6,7 @@ Este roteiro reúne os passos na ordem necessária para instalar o add-on, o Min
 
 - Use um host **amd64**, com Supervisor e espaço para uma cópia do Bedrock por instância, mundos, backups e mapas.
 - Garanta acesso HTTPS de saída para o download oficial do Bedrock e para as dependências compiladas durante a instalação.
-- Para administrar arquivos em `/share` e gerar a camada da seed, tenha um terminal/SSH com acesso ao Docker do host. Para o snapshot de terreno, tenha também acesso aos arquivos por compartilhamento e um computador Windows com PowerShell e uNmINeD CLI.
+- Para administrar arquivos em `/share` e gerar a camada da seed, tenha um terminal/SSH com acesso ao Docker do host. Para o snapshot de terreno, instale o [app Samba share](https://www.home-assistant.io/common-tasks/os/#installing-and-using-the-samba-share-app), configure usuário/senha e compartilhe `share`; use um computador Windows com PowerShell e uNmINeD CLI. No Explorador do Windows, confirme que `\\IP_DO_HA\share\minecraftRCON-Multi` e `\\IP_DO_HA\share\htdocs\minedev` abrem com essas credenciais.
 
 ## 2. Instalar o add-on e criar os mundos
 
