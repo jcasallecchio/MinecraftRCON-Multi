@@ -28,7 +28,7 @@
 
 Veja [configuração, portas e migração](MinecraftRCON/DOCS.md), [acesso remoto com DuckDNS ou DNS](docs/acesso-remoto.md) e [instalação do MineDev](console/README.md).
 
-Para o mapa MineDev, a partir do add-on **0.3.9** o Home Assistant processa estruturas e camadas adicionais por setor. Uma instalação nova ainda precisa publicar o snapshot e a camada inicial da seed por instância. Consulte [preparação completa do mapa](console/README.md#preparar-uma-instalação-nova-do-mapa); a preparação inicial usa uNmINeD e WSL em um computador.
+Para o mapa MineDev, a partir do add-on **0.4.0** o Home Assistant gera a camada inicial da seed e processa estruturas e outros locais por setor. O snapshot dos chunks explorados ainda usa o uNmINeD CLI em um computador com acesso ao compartilhamento. Consulte [preparação completa do mapa](console/README.md#preparar-uma-instalação-nova-do-mapa).
 
 ## Console e segurança
 
@@ -43,6 +43,7 @@ O MineDev é um painel PHP opcional. Guarde URLs e tokens das instâncias no `.e
 | [Add-on, configuração e migração](MinecraftRCON/DOCS.md) | Formulário de instâncias, diretórios, portas, backups, API, recursos e migração de um mundo existente |
 | [Acesso externo](docs/acesso-remoto.md) | Encaminhamento TCP/UDP, DuckDNS e DNS-only na Cloudflare |
 | [MineDev Console](console/README.md) | Instalação, login, `.env`, associação das APIs e uso do seletor |
+| [Hospedagem do MineDev](docs/hospedagem-minedev.md) | Apache/PHP, publicação dos arquivos e verificação de segurança |
 | [Histórico](MinecraftRCON/CHANGELOG.md) | Alterações desta linha multi-instância |
 
 ## Limites conhecidos

@@ -159,15 +159,17 @@ def main() -> int:
     storage = Path(os.environ.get("MINDEV_SEED_STORAGE", "/share/htdocs/minedev/storage")).resolve()
     binary = Path(os.environ.get("MINDEV_SEED_BINARY", "/usr/local/bin/minedev-seed-tile"))
     feature_binary = Path(os.environ.get("MINDEV_SEED_FEATURE_BINARY", "/usr/local/bin/minedev-seed-features"))
-    if not storage.is_dir():
-        LOG.error("Pasta do MineDev não encontrada: %s", storage)
-        return 1
     if not binary.is_file() or not os.access(binary, os.X_OK):
         LOG.error("Gerador de setores não está instalado: %s", binary)
         return 1
     if not feature_binary.is_file() or not os.access(feature_binary, os.X_OK):
         LOG.error("Gerador de recursos Bedrock não está instalado: %s", feature_binary)
         return 1
+    if not storage.is_dir():
+        LOG.info("Aguardando instalação do MineDev em %s", storage)
+    while not storage.is_dir():
+        if stop_event.wait(10):
+            return 0
     queue = storage / "seed-jobs"
     queue.mkdir(mode=0o700, parents=True, exist_ok=True)
     recover_interrupted_jobs(queue)

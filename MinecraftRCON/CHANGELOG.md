@@ -1,5 +1,10 @@
 # Histórico de versões
 
+## 0.4.0 — Preparação inicial da seed no Home Assistant
+- Inclui no add-on o gerador de biomas e slime chunks e o publicador do manifesto para instalações novas do MineDev.
+- Permite gerar a camada inicial pelo terminal do Home Assistant; estruturas e masmorras restantes seguem calculadas por setor pelo worker.
+- Mantém o worker aguardando a pasta `storage` quando o MineDev é instalado depois do add-on.
+
 ## 0.3.9 — Corrige a compilação do gerador de recursos
 - Gera o arquivo de somas das dependências Go antes de compilar as camadas de cavernas, fósseis e veios, corrigindo a falha de atualização da versão 0.3.8 no Supervisor.
 

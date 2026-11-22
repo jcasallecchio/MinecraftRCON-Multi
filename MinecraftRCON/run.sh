@@ -72,9 +72,9 @@ for index, item in enumerate(instances):
         raise SystemExit(f"[manager] ID inválido na instância {index + 1}; use letras minúsculas, números, _ ou -.")
     if instance_id in seen_ids:
         raise SystemExit(f"[manager] ID duplicado: {instance_id}")
-    if not isinstance(name, str) or not name.strip() or any(c in name for c in "\t\r\n"):
+    if not isinstance(name, str) or not name.strip() or any(c in name for c in "\t\n"):
         raise SystemExit(f"[manager] Nome inválido na instância {instance_id}.")
-    if not isinstance(world_name, str) or not world_name.strip() or any(c in world_name for c in "\t\r\n"):
+    if not isinstance(world_name, str) or not world_name.strip() or any(c in world_name for c in "\t\n"):
         raise SystemExit(f"[manager] world_name inválido na instância {instance_id}.")
     if isinstance(port, bool) or not isinstance(port, int) or not 1024 <= port <= 65533:
         raise SystemExit(f"[manager] Porta UDP inválida na instância {instance_id}; use 1024–65533.")
@@ -112,19 +112,15 @@ enabled = options.get("seed_worker_enabled", True)
 storage = options.get("seed_storage_path", "/share/htdocs/minedev/storage")
 if not isinstance(enabled, bool):
     raise SystemExit("[manager] seed_worker_enabled precisa ser booleano.")
-if not isinstance(storage, str) or not storage.startswith("/") or any(c in storage for c in "\t\r\n"):
+if not isinstance(storage, str) or not storage.startswith("/") or any(c in storage for c in "\t\n"):
     raise SystemExit("[manager] seed_storage_path precisa ser um caminho absoluto.")
 print(str(enabled).lower() + "\t" + storage)
 PY
   )
   if [[ "$seed_worker_enabled" == "true" ]]; then
-    if [[ -d "$seed_storage_path" ]]; then
-      MINDEV_SEED_STORAGE="$seed_storage_path" nice -n 10 python3 /seed_tile_worker.py &
-      WORKER_PID="$!"
-      log "Worker de setores do MineDev iniciado no Home Assistant."
-    else
-      log "Armazenamento do MineDev não encontrado em $seed_storage_path; worker de setores aguardando configuração."
-    fi
+    MINDEV_SEED_STORAGE="$seed_storage_path" nice -n 10 python3 /seed_tile_worker.py &
+    WORKER_PID="$!"
+    log "Worker de setores do MineDev iniciado; aguardará a pasta storage se necessário."
   else
     log "Cálculo de setores do MineDev desativado nas opções do add-on."
   fi
