@@ -4,7 +4,7 @@ O MineDev é uma aplicação PHP servida pelo Apache. O add-on MinecraftRCON Mul
 
 ## Home Assistant OS
 
-Use um add-on de Apache com PHP 8.2 ou superior que publique `/share/htdocs` como raiz web e respeite `.htaccess`. Habilite `mod_rewrite` e a extensão PHP cURL nas opções desse add-on. Copie todo o conteúdo de `console/`, inclusive `.htaccess` e `storage/.htaccess`, para `/share/htdocs/minedev/`. No terminal do add-on web, execute `php /share/htdocs/minedev/tools/initialize.php`. O servidor web precisa ler o `.env` criado e gravar em `storage/`. Configure `BEDROCK_API_TOKEN` e `BEDROCK_INSTANCES` como no [guia do painel](../console/README.md#2-crie-o-login-e-conecte-ao-bedrock).
+Use um add-on de Apache com PHP 8.2 ou superior que publique `/share/htdocs` como raiz web e respeite `.htaccess`. Habilite `mod_rewrite` e a extensão PHP cURL nas opções desse add-on. Copie todo o conteúdo de `console/`, inclusive `.htaccess` e `storage/.htaccess`, para `/share/htdocs/minedev/`. Em um terminal que tenha PHP CLI e acesso de gravação aos arquivos, execute `php tools/initialize.php` na pasta instalada; o caminho visto dentro de cada add-on web pode ser diferente de `/share/htdocs/minedev`. O servidor web precisa ler o `.env` criado e gravar em `storage/`. Configure `BEDROCK_API_TOKEN` e `BEDROCK_INSTANCES` como no [guia do painel](../console/README.md#2-crie-o-login-e-conecte-ao-bedrock).
 
 O add-on MinecraftRCON Multi vê o mesmo `/share`; deixe `seed_storage_path=/share/htdocs/minedev/storage`. A camada inicial e os setores da seed são gerados no Home Assistant. O snapshot dos chunks explorados usa o procedimento com uNmINeD descrito no guia do painel.
 

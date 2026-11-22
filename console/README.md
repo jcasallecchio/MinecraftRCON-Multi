@@ -91,7 +91,7 @@ O mapa usa dois conjuntos independentes. O snapshot de terreno mostra chunks gra
 
 Para preparar o mapa de uma instância nova:
 
-1. Configure o mundo no add-on e anote o ID, `world_name` e seed em `server.properties` (`level-seed`).
+1. Configure o mundo no add-on e anote o ID e `world_name`. Para um mundo novo com seed conhecida, [grave `level-seed` antes da primeira inicialização](../MinecraftRCON/DOCS.md#definir-a-seed-de-um-mundo-novo). Em um mundo importado, use a seed real do mundo; alterar `server.properties` depois não muda o terreno existente.
 2. Publique o snapshot de chunks conforme a seção seguinte.
 3. Instale MinecraftRCON Multi **0.4.0 ou superior**. No terminal do Home Assistant com acesso ao Docker do Supervisor, execute o gerador incluído no add-on. Troque ID e seed pelos valores da sua instância. O exemplo usa o caminho padrão do MineDev e o raio máximo de 32.768 blocos:
 

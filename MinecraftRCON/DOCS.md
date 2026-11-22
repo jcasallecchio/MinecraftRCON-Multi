@@ -47,6 +47,12 @@ Use uma porta de conexão distinta para cada instância. Com NetherNet, o add-on
 
 Para acesso externo atrás de NAT, preencha **Hostname público dos mundos** com o seu DuckDNS ou outro DNS público, sem `http://` e sem porta. O add-on resolve o IPv4 ao iniciar e anuncia `IPv4:porta:porta` em `server-udp-ports` de cada instância. Reinicie o add-on se o IP público mudar. O campo é opcional para uso somente local.
 
+### Definir a seed de um mundo novo
+
+Se quiser uma seed conhecida para usar no mapa, informe-a **antes da primeira inicialização** da instância. Depois de salvar a lista no Home Assistant, mantenha o add-on parado e crie `/share/minecraftRCON-Multi/instances/<id>/server.properties` com `level-seed=NUMERO_DA_SEED` (substitua o ID e o número). Você pode fazer isso pelo compartilhamento de arquivos ou por um terminal com acesso a `/share`. Não é necessário copiar o `server.properties` inteiro da distribuição: o add-on preserva `level-seed` e preenche as opções de transporte, porta e mundo na inicialização. Inicie o add-on somente depois de gravar esse arquivo.
+
+Alterar `level-seed` após a pasta `worlds/<world_name>/` existir **não troca a seed do mundo já criado**. Para importar um mundo existente, use a seed real dele; não deduza a seed do valor atual de `server.properties` se o arquivo foi alterado depois da criação. O mapa da seed só deve ser gerado quando a seed correta for conhecida.
+
 Não configure portas de conexão repetidas. O add-on valida IDs, nomes, quantidade e colisões de portas antes de iniciar. A ordem da lista define a porta TCP RCON; mantenha a ordem sincronizada com o `.env` do MineDev. Depois de alterar a lista, salve e reinicie o add-on. IDs definem as pastas persistentes dos mundos; mantenha-os estáveis.
 
 Se houver um proxy HTTPS, outro add-on ou qualquer serviço no mesmo host usando a porta TCP ou UDP escolhida, libere essa porta ou selecione outra antes de iniciar o mundo. Com NetherNet, o Bedrock pode registrar `Server started` mesmo sem conseguir abrir a porta de sinalização; o add-on verifica a disponibilidade e exige a confirmação `Accepting clients on` para declarar a instância pronta.
@@ -85,6 +91,8 @@ O novo repositório usa outro slug e outra pasta. Instalar este add-on não atua
 5. Inicie o novo add-on e verifique os logs e o acesso local. Preserve o backup original até confirmar o mundo migrado.
 
 Você pode copiar também `permissions.json`, `allowlist.json`, `structures/`, `behavior_packs/` e `resource_packs/` somente se esses dados forem necessários ao mundo. Revise os caminhos de pacotes e faça uma cópia de segurança antes. Os backups do add-on antigo não são automaticamente listados pelos novos endpoints.
+
+Para instalar pacotes novos em uma ou mais instâncias, siga [Pacotes adicionais por instância](../docs/pacotes-adicionais.md), incluindo os arquivos `world_behavior_packs.json` e `world_resource_packs.json`.
 
 ## Portas e API RCON
 
