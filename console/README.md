@@ -10,7 +10,7 @@ O navegador acessa o painel pelo Apache. O PHP chama as APIs RCON na rede de con
 - Apache 2.4 com PHP, `mod_rewrite` e suporte a `.htaccess` para a pasta do console. [Configuração de .htaccess no Apache](https://httpd.apache.org/docs/2.4/howto/htaccess.html)
 - PHP 8.2 ou mais recente, em uma versão que ainda receba correções de segurança. Habilite `curl` no PHP usado pelo Apache e tenha o PHP de linha de comando disponível para a configuração inicial. [Versões mantidas do PHP](https://www.php.net/supported-versions.php) · [Extensão cURL](https://www.php.net/manual/en/book.curl.php)
 
-Para instalar Apache e PHP do zero em um servidor Debian/Ubuntu separado, siga o [guia de hospedagem](../docs/hospedagem-minedev.md). No Home Assistant OS, use um add-on de hospedagem PHP/Apache que sirva `/share/htdocs`, com `mod_rewrite` e `.htaccess` habilitados; o Home Assistant OS não oferece `apt` no host. A hospedagem pode ficar em outra máquina, mas os cálculos da seed exigem que `storage/` esteja acessível ao add-on em `/share`.
+No Home Assistant OS, use o [add-on MineDev Web](../MineDevWeb/DOCS.md) deste repositório. Ele já inclui Apache/PHP, cURL e `mod_rewrite` e copia o painel para `/share/htdocs/minedev`. Para instalar em um servidor Debian/Ubuntu separado, siga o [guia de hospedagem](../docs/hospedagem-minedev.md). Nesse caso, os cálculos da seed exigem que `storage/` também esteja acessível ao add-on MinecraftRCON Multi em `/share`.
 
 ## 1. Instale os arquivos do console
 
@@ -110,7 +110,7 @@ O mapa é um snapshot web privado por instância. Ele representa os chunks grava
 
 Para gerar ou atualizar o mapa:
 
-1. Baixe o **uNmINeD CLI** somente pelo [site oficial](https://unmined.net/downloads/). O repositório não distribui o executável: a licença do uNmINeD permite uso gratuito, mas proíbe redistribuí-lo ou modificá-lo.
+1. Na página [oficial de downloads do uNmINeD](https://unmined.net/downloads/), escolha **Command Line Interface (CLI) → Windows x86 64bit**. Baixe a variante maior, que não depende de um runtime .NET instalado, e extraia **todos** os arquivos do ZIP em uma pasta vazia, por exemplo `C:\Ferramentas\uNmINeD\`. Confirme que `unmined-cli.exe` está nessa pasta e execute `& 'C:\Ferramentas\uNmINeD\unmined-cli.exe' --help` no PowerShell antes de continuar. A [documentação oficial do CLI](https://unmined.net/docs/cli/getting-started/) descreve a extração e o comando `web render`. O repositório não distribui o executável; confira os termos da licença no site oficial.
 2. No Windows que consegue acessar o compartilhamento do servidor, abra PowerShell na pasta instalada `minedev/` e execute o script abaixo. Ele lê os dados da instância no `.env`, para somente aquele mundo, aguarda a telemetria confirmar o encerramento da sessão Bedrock, copia o LevelDB fechado, renderiza em uma pasta temporária e publica o mapa por troca atômica. O script sempre solicita a inicialização da instância ao terminar.
 
 ~~~powershell

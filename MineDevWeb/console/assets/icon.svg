@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="MineDev">
+  <rect width="512" height="512" rx="108" fill="#101a12"/>
+  <rect x="92" y="92" width="328" height="328" rx="48" fill="#263c28"/>
+  <path d="M122 122h268v268H122z" fill="#91c85f"/>
+  <path d="M122 122h268v36H122zm0 36h36v232h-36zm232 0h36v232h-36zM122 354h268v36H122z" fill="#b6e78b"/>
+  <path d="M182 182h56v56h-56zm92 0h56v56h-56zm-92 92h56v56h-56zm92 0h56v56h-56z" fill="#18301c"/>
+  <path d="M190 190h40v8h-40zm92 0h40v8h-40zm-92 92h40v8h-40zm92 0h40v8h-40z" fill="#355e32"/>
+</svg>

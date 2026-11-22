@@ -1,6 +1,6 @@
 # Instalação completa do zero
 
-Este roteiro reúne os passos na ordem necessária para instalar o add-on, o MineDev e o mapa em um Home Assistant OS novo. O servidor web PHP/Apache, o uNmINeD CLI e os pacotes opcionais de conteúdo são dependências externas; seus binários e os mundos não são distribuídos neste repositório.
+Este roteiro reúne os passos na ordem necessária para instalar o add-on, o MineDev e o mapa em um Home Assistant OS novo. O repositório inclui **dois add-ons**: MinecraftRCON Multi e MineDev Web. O uNmINeD CLI e os pacotes opcionais de conteúdo são externos; seus binários e os mundos não são distribuídos neste repositório.
 
 ## 1. Preparar o Home Assistant
 
@@ -17,10 +17,11 @@ Este roteiro reúne os passos na ordem necessária para instalar o add-on, o Min
 
 ## 3. Instalar o MineDev
 
-1. Prepare Apache/PHP conforme o [guia de hospedagem](hospedagem-minedev.md). Em Home Assistant OS, é necessário um add-on web compatível que publique `/share/htdocs`; esse servidor web não faz parte do MinecraftRCON Multi.
-2. Copie **todo** o conteúdo de `console/`, inclusive `.htaccess` e `storage/.htaccess`, para `minedev/` na hospedagem.
-3. Execute `php tools/initialize.php` no ambiente com acesso de gravação à pasta. Guarde a senha exibida e defina `BEDROCK_API_TOKEN` e `BEDROCK_INSTANCES` no `.env`, seguindo [login e conexão](../console/README.md#2-crie-o-login-e-conecte-ao-bedrock).
-4. Confirme HTTP **403** para `.env.example` e `tools/initialize.php`; depois abra `/minedev/`, entre e verifique cada instância no seletor. A pasta `storage/` precisa ser gravável pelo PHP e pelo worker do add-on.
+1. Instale **MineDev Web** no mesmo repositório de add-ons e inicie-o. Ele já inclui Apache/PHP, cURL, `mod_rewrite` e uma cópia do painel; publica os arquivos em `/share/htdocs/minedev`. Consulte o [primeiro acesso](../MineDevWeb/DOCS.md).
+2. Inicialize o login pelo terminal do Home Assistant usando o comando do guia. Guarde a senha exibida e defina `BEDROCK_API_TOKEN` e `BEDROCK_INSTANCES` em `/share/htdocs/minedev/.env`.
+3. Abra `http://IP_DO_HA:8099/minedev/` na LAN, confirme HTTP **403** para `.env.example` e `tools/initialize.php`, faça login e verifique cada instância no seletor. O add-on web mantém `storage/` em `/share`, acessível também ao worker do MinecraftRCON Multi.
+
+Para hospedar o MineDev fora do Home Assistant, há um [guia alternativo de Apache/PHP](hospedagem-minedev.md).
 
 ## 4. Preparar o mapa
 
@@ -43,4 +44,4 @@ Confirme primeiro a entrada pela rede local. Para acesso pela internet, siga [Du
 - Cada mapa mostra o snapshot publicado e/ou a camada da seed da **mesma** instância.
 - Se houver acesso externo, cada porta de jogo foi testada fora do Wi-Fi; HTTP 200 na porta TCP não comprova a conexão UDP do Minecraft.
 
-Uma instalação em Home Assistant vazio, com todos os possíveis add-ons web de terceiros, não pode ser validada apenas com os arquivos deste repositório. O projeto entrega o add-on e o código do painel; a escolha e a configuração do servidor web e o download do uNmINeD continuam passos explícitos do administrador.
+O mapa de terreno requer baixar o uNmINeD CLI do site oficial e executá-lo no Windows com acesso aos mundos por compartilhamento. Esse executável não pode ser redistribuído no repositório. O mapa de seed e todos os seus cálculos rodam no Home Assistant.

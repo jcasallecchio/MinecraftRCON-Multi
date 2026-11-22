@@ -1,0 +1,17 @@
+{
+  "name": "MineDev Web",
+  "version": "0.1.0",
+  "slug": "minedev_web",
+  "description": "Hospedagem PHP/Apache do MineDev Console para MinecraftRCON Multi",
+  "startup": "services",
+  "boot": "auto",
+  "init": false,
+  "ingress": false,
+  "arch": ["amd64"],
+  "ports": {"80/tcp": 8099},
+  "ports_description": {"80/tcp": "MineDev Web em HTTP local; use HTTPS ou VPN para acesso externo"},
+  "webui": "http://[HOST]:[PORT:80]/minedev/",
+  "map": ["share:rw"],
+  "options": {},
+  "schema": {}
+}

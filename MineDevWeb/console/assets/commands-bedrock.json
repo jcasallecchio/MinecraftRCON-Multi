@@ -1,0 +1,582 @@
+{
+  "edition": "bedrock",
+  "source": "Microsoft Learn - Bedrock Commands",
+  "source_url": "https://learn.microsoft.com/en-us/minecraft/creator/commands/commands?view=minecraft-bedrock-stable",
+  "note": "Sugestões documentadas. A disponibilidade e os argumentos variam com a versão, permissões, cheats e pacotes instalados. O console também aceita qualquer comando nativo Bedrock.",
+  "selectors": [
+    {
+      "value": "@a",
+      "label": "Todos os jogadores"
+    },
+    {
+      "value": "@e",
+      "label": "Todas as entidades"
+    },
+    {
+      "value": "@p",
+      "label": "Jogador mais próximo"
+    },
+    {
+      "value": "@r",
+      "label": "Jogador aleatório"
+    },
+    {
+      "value": "@s",
+      "label": "Executor"
+    }
+  ],
+  "commands": [
+    {
+      "name": "aimassist",
+      "description": "Ativa ou configura o auxílio de mira.",
+      "syntax": "aimassist <player>",
+      "category": "Player"
+    },
+    {
+      "name": "allowlist",
+      "description": "Gerencia a lista de jogadores permitidos.",
+      "syntax": "allowlist <add|remove|list|reload> [player]",
+      "category": "Administração"
+    },
+    {
+      "name": "camera",
+      "description": "Controla a perspectiva da câmera de jogadores.",
+      "syntax": "camera <target> <preset>",
+      "category": "Jogadores"
+    },
+    {
+      "name": "camerashake",
+      "description": "Aplica ou interrompe vibração de câmera.",
+      "syntax": "camerashake <target> <add|stop> [intensity] [seconds] [type]",
+      "category": "Jogadores"
+    },
+    {
+      "name": "changesetting",
+      "description": "Altera configuração do servidor em execução.",
+      "syntax": "changesetting <setting> <value>",
+      "category": "Administração"
+    },
+    {
+      "name": "clear",
+      "description": "Remove itens do inventário.",
+      "syntax": "clear <player> [item] [maxCount]",
+      "category": "Jogadores"
+    },
+    {
+      "name": "clearspawnpoint",
+      "description": "Remove o ponto de renascimento.",
+      "syntax": "clearspawnpoint <player>",
+      "category": "Jogadores"
+    },
+    {
+      "name": "clone",
+      "description": "Copia blocos de uma região para outra.",
+      "syntax": "clone <begin> <end> <destination> [maskMode] [cloneMode]",
+      "category": "Mundo"
+    },
+    {
+      "name": "controlscheme",
+      "description": "Altera ou limpa o esquema de controle.",
+      "syntax": "controlscheme <target> <scheme>",
+      "category": "Jogadores"
+    },
+    {
+      "name": "damage",
+      "description": "Aplica dano a entidades.",
+      "syntax": "damage <target> <amount> [cause]",
+      "category": "Jogadores"
+    },
+    {
+      "name": "daylock",
+      "description": "Trava ou libera o ciclo dia/noite.",
+      "syntax": "daylock <true|false>",
+      "category": "Mundo"
+    },
+    {
+      "name": "deop",
+      "description": "Remove operador de um jogador.",
+      "syntax": "deop <player>",
+      "category": "Administração"
+    },
+    {
+      "name": "dialogue",
+      "description": "Abre diálogo de NPC para jogadores.",
+      "syntax": "dialogue <open|change> <target> <scene>",
+      "category": "Jogadores"
+    },
+    {
+      "name": "difficulty",
+      "description": "Define a dificuldade do mundo.",
+      "syntax": "difficulty <peaceful|easy|normal|hard>",
+      "category": "Mundo"
+    },
+    {
+      "name": "effect",
+      "description": "Adiciona ou remove efeitos de status.",
+      "syntax": "effect <player> <effect> [seconds] [amplifier] [hideParticles]",
+      "category": "Jogadores"
+    },
+    {
+      "name": "enchant",
+      "description": "Encanta o item segurado por um jogador.",
+      "syntax": "enchant <player> <enchantment> [level]",
+      "category": "Jogadores"
+    },
+    {
+      "name": "event",
+      "description": "Dispara um evento em entidade.",
+      "syntax": "event <target> <eventName>",
+      "category": "Entidades"
+    },
+    {
+      "name": "execute",
+      "description": "Executa comandos como uma entidade ou condição.",
+      "syntax": "execute <as|at|if|unless|run> ...",
+      "category": "Mundo"
+    },
+    {
+      "name": "fill",
+      "description": "Preenche uma região com blocos.",
+      "syntax": "fill <from> <to> <block> [blockStates] [replace|destroy|hollow|outline|keep]",
+      "category": "Mundo"
+    },
+    {
+      "name": "fog",
+      "description": "Adiciona ou remove névoa para jogadores.",
+      "syntax": "fog <target> <push|pop|remove> <fogId>",
+      "category": "Jogadores"
+    },
+    {
+      "name": "function",
+      "description": "Executa uma função de pacote de comportamento.",
+      "syntax": "function <functionName>",
+      "category": "Mundo"
+    },
+    {
+      "name": "gamemode",
+      "description": "Altera o modo de jogo.",
+      "syntax": "gamemode <survival|creative|adventure|spectator> [player]",
+      "category": "Jogadores"
+    },
+    {
+      "name": "gamerule",
+      "description": "Consulta ou altera regras do mundo.",
+      "syntax": "gamerule <rule> [value]",
+      "category": "Mundo"
+    },
+    {
+      "name": "gametest",
+      "description": "Controla testes GameTest (quando habilitados).",
+      "syntax": "gametest <run|create|...>",
+      "category": "Desenvolvimento"
+    },
+    {
+      "name": "give",
+      "description": "Entrega itens a jogadores.",
+      "syntax": "give <player> <item> [amount] [data] [components]",
+      "category": "Jogadores"
+    },
+    {
+      "name": "help",
+      "description": "Mostra comandos e sintaxe disponíveis no servidor.",
+      "syntax": "help [page|command]",
+      "category": "Ajuda"
+    },
+    {
+      "name": "hud",
+      "description": "Controla elementos da interface dos jogadores.",
+      "syntax": "hud <target> <hide|reset> [element]",
+      "category": "Jogadores"
+    },
+    {
+      "name": "inputpermission",
+      "description": "Ativa ou desativa entradas de jogadores.",
+      "syntax": "inputpermission <target> <permission> <enable|disable>",
+      "category": "Jogadores"
+    },
+    {
+      "name": "kick",
+      "description": "Expulsa um jogador do servidor.",
+      "syntax": "kick <player> [reason]",
+      "category": "Administração"
+    },
+    {
+      "name": "kill",
+      "description": "Elimina entidades selecionadas.",
+      "syntax": "kill [target]",
+      "category": "Entidades"
+    },
+    {
+      "name": "list",
+      "description": "Lista jogadores conectados.",
+      "syntax": "list",
+      "category": "Jogadores"
+    },
+    {
+      "name": "locate",
+      "description": "Localiza estruturas ou biomas.",
+      "syntax": "locate <structure|biome> <name>",
+      "category": "Mundo"
+    },
+    {
+      "name": "loot",
+      "description": "Gera ou entrega loot tables.",
+      "syntax": "loot <spawn|give|insert|replace> ...",
+      "category": "Mundo"
+    },
+    {
+      "name": "me",
+      "description": "Envia uma mensagem de ação.",
+      "syntax": "me <message>",
+      "category": "Chat"
+    },
+    {
+      "name": "mobevent",
+      "description": "Ativa ou desativa eventos de criaturas.",
+      "syntax": "mobevent <event> <true|false>",
+      "category": "Mundo"
+    },
+    {
+      "name": "music",
+      "description": "Controla faixas de música.",
+      "syntax": "music <play|queue|stop> [track]",
+      "category": "Mundo"
+    },
+    {
+      "name": "op",
+      "description": "Concede operador a um jogador.",
+      "syntax": "op <player>",
+      "category": "Administração"
+    },
+    {
+      "name": "packstack",
+      "description": "Mostra a pilha de pacotes ativa.",
+      "syntax": "packstack [client|server]",
+      "category": "Administração"
+    },
+    {
+      "name": "particle",
+      "description": "Cria emissores de partículas.",
+      "syntax": "particle <effect> <position>",
+      "category": "Mundo"
+    },
+    {
+      "name": "permission",
+      "description": "Recarrega permissões do servidor dedicado.",
+      "syntax": "permission reload",
+      "category": "Administração"
+    },
+    {
+      "name": "place",
+      "description": "Coloca uma estrutura ou feature.",
+      "syntax": "place <feature|structure|jigsaw> ...",
+      "category": "Mundo"
+    },
+    {
+      "name": "playanimation",
+      "description": "Executa uma animação em entidades.",
+      "syntax": "playanimation <target> <animation> [nextState]",
+      "category": "Entidades"
+    },
+    {
+      "name": "playsound",
+      "description": "Reproduz som para jogadores.",
+      "syntax": "playsound <sound> [player] [position] [volume] [pitch]",
+      "category": "Áudio"
+    },
+    {
+      "name": "project",
+      "description": "Ferramentas de projeto disponíveis em modo Editor.",
+      "syntax": "project <subcommand>",
+      "category": "Desenvolvimento"
+    },
+    {
+      "name": "recipe",
+      "description": "Desbloqueia ou bloqueia receitas.",
+      "syntax": "recipe <give|take> <player> <recipe>",
+      "category": "Jogadores"
+    },
+    {
+      "name": "reload",
+      "description": "Recarrega funções e scripts dos pacotes.",
+      "syntax": "reload",
+      "category": "Administração"
+    },
+    {
+      "name": "reloadconfig",
+      "description": "Recarrega arquivos de configuração.",
+      "syntax": "reloadconfig",
+      "category": "Administração"
+    },
+    {
+      "name": "reloadpacketlimitconfig",
+      "description": "Recarrega limites de pacotes.",
+      "syntax": "reloadpacketlimitconfig",
+      "category": "Administração"
+    },
+    {
+      "name": "replaceitem",
+      "description": "Substitui itens em inventários ou entidades.",
+      "syntax": "replaceitem <block|entity> ...",
+      "category": "Jogadores"
+    },
+    {
+      "name": "ride",
+      "description": "Controla montarias e passageiros.",
+      "syntax": "ride <rider> <start_riding|stop_riding|evict_riders> ...",
+      "category": "Entidades"
+    },
+    {
+      "name": "save",
+      "description": "Controla o processo de salvamento do mundo.",
+      "syntax": "save <hold|resume|query|...>",
+      "category": "Administração"
+    },
+    {
+      "name": "say",
+      "description": "Envia uma mensagem pública no chat.",
+      "syntax": "say <message>",
+      "category": "Chat"
+    },
+    {
+      "name": "schedule",
+      "description": "Agenda execução de funções.",
+      "syntax": "schedule <on_area_loaded|clear> ...",
+      "category": "Mundo"
+    },
+    {
+      "name": "scoreboard",
+      "description": "Cria objetivos e altera pontuações.",
+      "syntax": "scoreboard <objectives|players> ...",
+      "category": "Jogadores"
+    },
+    {
+      "name": "script",
+      "description": "Ferramentas de depuração de scripts.",
+      "syntax": "script <subcommand>",
+      "category": "Desenvolvimento"
+    },
+    {
+      "name": "scriptevent",
+      "description": "Dispara eventos para scripts de comportamento.",
+      "syntax": "scriptevent <namespace:event> [message]",
+      "category": "Desenvolvimento"
+    },
+    {
+      "name": "sendshowstoreoffer",
+      "description": "Abre uma oferta da loja para um jogador.",
+      "syntax": "sendshowstoreoffer <player> <offerId>",
+      "category": "Administração"
+    },
+    {
+      "name": "setblock",
+      "description": "Altera um bloco em uma coordenada.",
+      "syntax": "setblock <position> <block> [blockStates] [mode]",
+      "category": "Mundo"
+    },
+    {
+      "name": "setmaxplayers",
+      "description": "Altera o limite de jogadores da sessão.",
+      "syntax": "setmaxplayers <maxPlayers>",
+      "category": "Administração"
+    },
+    {
+      "name": "setworldspawn",
+      "description": "Define o ponto inicial do mundo.",
+      "syntax": "setworldspawn [position]",
+      "category": "Mundo"
+    },
+    {
+      "name": "spawnpoint",
+      "description": "Define o ponto de renascimento de um jogador.",
+      "syntax": "spawnpoint <player> [position]",
+      "category": "Jogadores"
+    },
+    {
+      "name": "spreadplayers",
+      "description": "Distribui entidades em posições aleatórias.",
+      "syntax": "spreadplayers <center> <spreadDistance> <maxRange> <target>",
+      "category": "Mundo"
+    },
+    {
+      "name": "stop",
+      "description": "Encerra o servidor.",
+      "syntax": "stop",
+      "category": "Administração"
+    },
+    {
+      "name": "stopsound",
+      "description": "Interrompe um som para jogador.",
+      "syntax": "stopsound <player> [sound]",
+      "category": "Áudio"
+    },
+    {
+      "name": "structure",
+      "description": "Salva, carrega ou remove estruturas.",
+      "syntax": "structure <save|load|delete> <name> ...",
+      "category": "Mundo"
+    },
+    {
+      "name": "summon",
+      "description": "Invoca entidades no mundo.",
+      "syntax": "summon <entity> [position] [event]",
+      "category": "Entidades"
+    },
+    {
+      "name": "tag",
+      "description": "Adiciona ou remove tags de entidades.",
+      "syntax": "tag <target> <add|remove|list> [tag]",
+      "category": "Entidades"
+    },
+    {
+      "name": "teleport",
+      "description": "Teleporta entidades ou jogadores.",
+      "syntax": "teleport <target> <destination> [rotation]",
+      "category": "Jogadores"
+    },
+    {
+      "name": "tell",
+      "description": "Envia mensagem privada.",
+      "syntax": "tell <player> <message>",
+      "category": "Chat"
+    },
+    {
+      "name": "tellraw",
+      "description": "Envia mensagem JSON no chat.",
+      "syntax": "tellraw <target> <rawJson>",
+      "category": "Chat"
+    },
+    {
+      "name": "testfor",
+      "description": "Conta entidades que correspondem a filtros.",
+      "syntax": "testfor <target>",
+      "category": "Entidades"
+    },
+    {
+      "name": "testforblock",
+      "description": "Verifica um bloco em uma posição.",
+      "syntax": "testforblock <position> <block> [data]",
+      "category": "Mundo"
+    },
+    {
+      "name": "testforblocks",
+      "description": "Compara blocos de duas regiões.",
+      "syntax": "testforblocks <begin> <end> <destination> [all|masked]",
+      "category": "Mundo"
+    },
+    {
+      "name": "tickingarea",
+      "description": "Gerencia áreas que permanecem carregadas.",
+      "syntax": "tickingarea <add|remove|remove_all|list> ...",
+      "category": "Mundo"
+    },
+    {
+      "name": "time",
+      "description": "Consulta ou altera o horário do mundo.",
+      "syntax": "time <set|add|query> <value>",
+      "category": "Mundo"
+    },
+    {
+      "name": "title",
+      "description": "Exibe títulos e legendas.",
+      "syntax": "title <target> <clear|reset|title|subtitle|actionbar> [text]",
+      "category": "Chat"
+    },
+    {
+      "name": "titleraw",
+      "description": "Exibe títulos usando JSON.",
+      "syntax": "titleraw <target> <title|subtitle|actionbar> <rawJson>",
+      "category": "Chat"
+    },
+    {
+      "name": "toggledownfall",
+      "description": "Alterna precipitação.",
+      "syntax": "toggledownfall",
+      "category": "Mundo"
+    },
+    {
+      "name": "transfer",
+      "description": "Transfere jogador para outro servidor.",
+      "syntax": "transfer <player> <server> [port]",
+      "category": "Administração"
+    },
+    {
+      "name": "weather",
+      "description": "Altera o clima.",
+      "syntax": "weather <clear|rain|thunder> [duration]",
+      "category": "Mundo"
+    },
+    {
+      "name": "wsserver",
+      "description": "Conecta ao servidor WebSocket.",
+      "syntax": "wsserver <serverUri>",
+      "category": "Desenvolvimento"
+    },
+    {
+      "name": "xp",
+      "description": "Adiciona ou remove experiência.",
+      "syntax": "xp <amount> [player]",
+      "category": "Jogadores"
+    },
+    {
+      "name": "?",
+      "description": "Alias de help.",
+      "syntax": "? [page|command]",
+      "category": "Ajuda"
+    },
+    {
+      "name": "alwaysday",
+      "description": "Alias de daylock.",
+      "syntax": "alwaysday <true|false>",
+      "category": "Mundo"
+    },
+    {
+      "name": "connect",
+      "description": "Alias de wsserver em algumas versões.",
+      "syntax": "connect <serverUri>",
+      "category": "Desenvolvimento"
+    },
+    {
+      "name": "msg",
+      "description": "Alias de tell.",
+      "syntax": "msg <player> <message>",
+      "category": "Chat"
+    },
+    {
+      "name": "tp",
+      "description": "Alias de teleport.",
+      "syntax": "tp <target> <destination> [rotation]",
+      "category": "Jogadores"
+    },
+    {
+      "name": "w",
+      "description": "Alias de tell.",
+      "syntax": "w <player> <message>",
+      "category": "Chat"
+    },
+    {
+      "name": "whitelist",
+      "description": "Alias de allowlist em algumas versões.",
+      "syntax": "whitelist <add|remove|list> [player]",
+      "category": "Administração"
+    },
+    {
+      "name": "ops",
+      "description": "Mostra operadores do servidor quando disponível.",
+      "syntax": "ops",
+      "category": "Administração"
+    },
+    {
+      "name": "agent",
+      "description": "Comando de agente do Code Builder em mundos educacionais.",
+      "syntax": "agent <subcommand>",
+      "category": "Educação"
+    },
+    {
+      "name": "codebuilder_actorinfo",
+      "description": "Informações do ator do Code Builder.",
+      "syntax": "codebuilder_actorinfo",
+      "category": "Educação"
+    }
+  ]
+}

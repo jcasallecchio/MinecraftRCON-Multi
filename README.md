@@ -16,6 +16,7 @@
 - **Portas independentes.** Cada instância usa a porta configurada para sinalização TCP e tráfego UDP NetherNet, além de uma porta TCP própria para a API RCON.
 - **Atualização automática do Bedrock.** Cada instância consulta a distribuição oficial na inicialização e preserva seu mundo e arquivos próprios durante atualizações.
 - **MineDev Console multi-instância.** Selecione um servidor também no celular para ver telemetria, alternar Terminal/Feed de jogadores no mesmo quadro, consultar estatísticas e explorar um mapa web dos chunks já descobertos. O painel pode ser instalado na tela inicial como aplicativo web.
+- **MineDev Web opcional.** Um segundo add-on do mesmo repositório hospeda o painel com Apache/PHP no Home Assistant e mantém configuração, histórico e mapas em `/share`.
 - **Backups e restauração por mundo.** Agendamento, retenção e operação autenticada são separados por instância.
 - **Padrões de acesso claros.** A allowlist de jogadores começa desligada; o envio opcional de telemetria do servidor Bedrock à Mojang/Microsoft começa ligado, com controles para ambos.
 
@@ -25,6 +26,7 @@
 2. Adicione `https://github.com/jcasallecchio/MinecraftRCON-Multi` ou use o botão acima.
 3. Instale **MinecraftRCON Multi**, adicione pelo menos um mundo em **Mundos/instâncias** e defina `rcon_token` com pelo menos 32 caracteres.
 4. Salve, inicie o add-on e confira os logs. No Minecraft, conecte ao IP do Home Assistant e à porta configurada para o mundo.
+5. Para o painel, instale o add-on **MineDev Web** do mesmo repositório e siga o [primeiro acesso](MineDevWeb/DOCS.md). O painel usa a porta local `8099/TCP` por padrão.
 
 Para instalar todos os componentes, comece pelo [roteiro de instalação do zero](docs/instalacao-do-zero.md). Veja também [configuração, portas e migração](MinecraftRCON/DOCS.md), [acesso remoto com DuckDNS ou DNS](docs/acesso-remoto.md) e [instalação do MineDev](console/README.md).
 
@@ -34,7 +36,7 @@ Para o mapa MineDev, a partir do add-on **0.4.0** o Home Assistant gera a camada
 
 O add-on expõe a API HTTP autenticada em `19233/TCP` para a primeira instância, `19234/TCP` para a segunda e assim por diante. Restrinja essas portas à rede local ou VPN; não as encaminhe pela internet. Encaminhe no roteador apenas as portas do jogo que você quer disponibilizar.
 
-O MineDev é um painel PHP opcional. Guarde URLs e tokens das instâncias no `.env` fora do controle de versão. O seletor do navegador recebe somente os nomes e IDs públicos configurados.
+O MineDev é um painel PHP opcional. O add-on MineDev Web inclui a hospedagem necessária; também é possível hospedar `console/` em outro servidor Apache/PHP. Guarde URLs e tokens das instâncias no `.env` fora do controle de versão. O seletor do navegador recebe somente os nomes e IDs públicos configurados.
 
 ## Documentação
 
@@ -44,6 +46,7 @@ O MineDev é um painel PHP opcional. Guarde URLs e tokens das instâncias no `.e
 | [Instalação do zero](docs/instalacao-do-zero.md) | Sequência completa, pré-requisitos e verificação final |
 | [Acesso externo](docs/acesso-remoto.md) | Encaminhamento TCP/UDP, DuckDNS e DNS-only na Cloudflare |
 | [MineDev Console](console/README.md) | Instalação, login, `.env`, associação das APIs e uso do seletor |
+| [MineDev Web](MineDevWeb/DOCS.md) | Add-on opcional de Apache/PHP no Home Assistant e primeiro acesso |
 | [Hospedagem do MineDev](docs/hospedagem-minedev.md) | Apache/PHP, publicação dos arquivos e verificação de segurança |
 | [Pacotes adicionais](docs/pacotes-adicionais.md) | Behavior/resource packs e associação por mundo |
 | [Histórico](MinecraftRCON/CHANGELOG.md) | Alterações desta linha multi-instância |

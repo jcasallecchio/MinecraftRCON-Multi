@@ -1,0 +1,9 @@
+.env
+.env.*
+!.env.example
+storage/*
+!storage/.htaccess
+*.sqlite
+*.sqlite3
+*.db
+*.jsonl
