@@ -11,7 +11,7 @@
   window.MineDevMap = Object.freeze({ map, gameToMap, mapToGame, centerAt(x, z) { unmined.center([Number(x), Number(z)]); } });
   const css = document.createElement('link');
   css.rel = 'stylesheet';
-  css.href = 'minedev-map-bridge.css?v=27';
+  css.href = 'minedev-map-bridge.css?v=29';
   document.head.append(css);
 
   const panel = document.createElement('section');
@@ -20,12 +20,26 @@
   panel.innerHTML = `<div class="minedev-map-heading"><strong>Explorar mundo</strong><button type="button" class="minedev-map-collapse" aria-label="Recolher ferramentas" aria-expanded="true">−</button></div>
     <div class="minedev-map-body"><form class="minedev-map-go"><label for="minedev-map-coordinates">Ir para coordenadas X, Z</label><div class="minedev-map-field"><input id="minedev-map-coordinates" autocomplete="off" placeholder="Ex.: 120, -350" maxlength="24"><button type="submit">Ir</button></div></form>
     <details class="minedev-live-players" open><summary>Jogadores ao vivo <span class="minedev-live-count">—</span></summary><p class="minedev-live-status">Consultando jogadores…</p><div class="minedev-live-list"></div></details>
-    <details class="minedev-seed-details"><summary>Explorar pela seed <span class="minedev-seed-count"></span></summary><div class="minedev-seed-body"><p class="minedev-seed-status">Carregando dados da seed…</p><div class="minedev-seed-controls" hidden><details class="minedev-seed-types" open><summary>Locais e estruturas</summary><div class="minedev-seed-type-actions"><button type="button" class="minedev-seed-all">Todos disponíveis</button><button type="button" class="minedev-seed-none">Nenhum</button></div><div class="minedev-seed-type-list"></div></details></div></div></details>
     <div class="minedev-map-message" role="status" aria-live="polite"></div></div>`;
   document.body.append(panel);
   const $ = (selector) => panel.querySelector(selector);
   const coordinateInput = $('#minedev-map-coordinates');
   const message = $('.minedev-map-message');
+  const structureTrigger = document.createElement('button');
+  structureTrigger.type = 'button';
+  structureTrigger.className = 'minedev-structure-trigger';
+  structureTrigger.setAttribute('aria-label', 'Abrir filtro de locais e estruturas');
+  structureTrigger.setAttribute('aria-haspopup', 'dialog');
+  structureTrigger.setAttribute('aria-expanded', 'false');
+  structureTrigger.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5 9 3l6 2.5L20 3v15.5L15 21l-6-2.5L4 21V5.5Z"/><path d="M9 3v15.5M15 5.5V21"/></svg>';
+  document.body.append(structureTrigger);
+  const structureModal = document.createElement('dialog');
+  structureModal.className = 'minedev-structure-modal';
+  structureModal.setAttribute('aria-labelledby', 'minedev-structure-title');
+  structureModal.innerHTML = '<header class="minedev-structure-modal-head"><div><strong id="minedev-structure-title">Locais e estruturas</strong><small>Toque nos ícones para exibir ou ocultar</small></div><button type="button" class="minedev-structure-close" aria-label="Fechar">×</button></header><p class="minedev-structure-status">Carregando estruturas…</p><div class="minedev-structure-grid" role="group" aria-label="Filtros de estruturas"></div>';
+  document.body.append(structureModal);
+  const structureGrid = structureModal.querySelector('.minedev-structure-grid');
+  const structureStatus = structureModal.querySelector('.minedev-structure-status');
   const hud = document.createElement('output');
   hud.className = 'minedev-map-hud';
   hud.textContent = 'X — · Z —';
@@ -70,15 +84,16 @@
     fossil: ['#eee1c8', 'Fo'], ore_vein: ['#d7a834', 'Min'], cave: ['#9ca9b2', 'C'],
   };
   const seedCatalog = [
-    ['Spawn Point', 'spawn'], ['Slime Chunk', 'slime'], ['Village', 'village'], ['Ancient City', 'ancient_city'],
-    ['Dungeon', 'dungeon'], ['Mansion', 'mansion'], ['Monument', 'monument'], ['Outpost', 'outpost'],
-    ['Mineshaft', 'mineshaft'], ['Ruined Portal', 'ruined_portal'], ['Jungle Temple', 'jungle_temple'],
-    ['Desert Temple', 'desert_pyramid'], ['Witch Hut', 'swamp_hut'], ['Treasure', 'treasure'],
-    ['Shipwreck', 'shipwreck'], ['Igloo', 'igloo'], ['Ocean Ruins', 'ocean_ruin'], ['Fossil', 'fossil'],
-    ['Cave', 'cave'], ['Ravine', 'ravine'], ['Lava Pool', 'lava_lake'], ['Geode', 'geode'],
-    ['Ore Veins', 'ore_vein'], ['Desert Well', 'desert_well'], ['Trail Ruins', 'trail_ruins'],
-    ['Trial Chamber', 'trial_chambers'], ['Camp', 'abandoned_camp'],
+    ['Spawn Point', 'spawn', 'spawn_point'], ['Slime Chunk', 'slime', 'slime_chunk'], ['Village', 'village', 'village'], ['Ancient City', 'ancient_city', 'ancient_city'],
+    ['Dungeon', 'dungeon', 'dungeon'], ['Mansion', 'mansion', 'mansion'], ['Monument', 'monument', 'monument'], ['Outpost', 'outpost', 'outpost'],
+    ['Mineshaft', 'mineshaft', 'mineshaft'], ['Ruined Portal', 'ruined_portal', 'ruined_portal'], ['Jungle Temple', 'jungle_temple', 'jungle_temple'],
+    ['Desert Temple', 'desert_pyramid', 'desert_temple'], ['Witch Hut', 'swamp_hut', 'witch_hut'], ['Treasure', 'treasure', 'treasure'],
+    ['Shipwreck', 'shipwreck', 'shipwreck'], ['Igloo', 'igloo', 'igloo'], ['Ocean Ruins', 'ocean_ruin', 'ocean_ruins'], ['Fossil', 'fossil', 'fossil'],
+    ['Cave', 'cave', 'cave'], ['Ravine', 'ravine', 'ravine'], ['Lava Pool', 'lava_lake', 'lava_pool'], ['Geode', 'geode', 'geode'],
+    ['Ore Veins', 'ore_vein', 'ore_veins'], ['Desert Well', 'desert_well', 'desert_well'], ['Trail Ruins', 'trail_ruins', 'trail_ruins'],
+    ['Trial Chamber', 'trial_chambers', 'trial_chamber'], ['Camp', 'abandoned_camp', 'camp'],
   ];
+  const dungeonTypes = ['dungeon_zombie', 'dungeon_skeleton', 'dungeon_spider'];
   function notify(text, error = false) { message.textContent = text; message.classList.toggle('error', error); }
   function formatBiomeName(value) {
     return String(value || '').replaceAll('_', ' ').trim().toLowerCase().replace(/\b\p{L}/gu, (letter) => letter.toUpperCase());
@@ -259,7 +274,7 @@
     renderSeedStructures();
   }
   async function loadSeedLayer() {
-    const status = $('.minedev-seed-status');
+    const status = structureStatus;
     try {
       const response = await fetch(`../../api.php?action=seed-layer&instance_id=${encodeURIComponent(instanceId)}`, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
       const data = await response.json();
@@ -318,65 +333,58 @@
       if (!counts.size) for (const item of seedStructures) counts.set(item.type, (counts.get(item.type) || 0) + 1);
       const available = new Set(Array.isArray(data.types) ? data.types.map((item) => item.type) : seedStructures.map((item) => item.type));
       const generatedByTile = new Set(['fossil', 'cave', 'ore_vein']);
-      const typeList = $('.minedev-seed-type-list');
-      const dungeonRadius = Number.isInteger(data.dungeon_coverage?.radius) ? data.dungeon_coverage.radius : 0;
-      const dungeonTypes = ['dungeon_zombie', 'dungeon_skeleton', 'dungeon_spider'];
       const refreshPoints = () => { renderSeedStructures(); if (seedTileRevision && enabledTypes.size) loadSeedTiles(); };
-      const makeRow = (label, type, count, supported, parent = typeList) => {
-        const row = document.createElement('label');
-        const input = document.createElement('input'); input.type = 'checkbox'; input.disabled = !supported;
-        if (type) input.dataset.type = type;
-        const [color, icon] = seedMarkerStyles[type] || ['#f4c46f', label.slice(0, 1).toUpperCase()];
-        const badge = document.createElement('i'); badge.className = 'minedev-seed-type-icon'; badge.style.setProperty('--seed-marker-color', color); badge.textContent = icon;
-        const text = document.createElement('span'); text.textContent = !supported ? `${label} · sem cálculo` : generatedByTile.has(type) ? `${label} · por setor` : `${label} (${Number(count).toLocaleString('pt-BR')})`;
-        row.append(input, badge, text); parent.append(row);
-        return input;
-      };
-      for (const [label, type] of seedCatalog) {
-        if (type === 'slime') {
-          const input = makeRow(label, '', data.slime_chunks || 0, Boolean(seedSlimeLayer));
-          input.dataset.layer = 'slime';
-          input.addEventListener('change', () => { if (input.checked) enableSlime(); else seedSlimeLayer?.setVisible(false); });
-        } else if (type === 'dungeon') {
-          const group = document.createElement('div'); group.className = 'minedev-seed-dungeon'; typeList.append(group);
-          const supported = dungeonTypes.some((id) => available.has(id));
-          const totalDungeons = dungeonTypes.reduce((sum, id) => sum + Number(counts.get(id) || 0), 0);
-          const parent = makeRow(label, '', totalDungeons, supported, group);
-          const children = document.createElement('div'); children.className = 'minedev-seed-dungeon-children'; group.append(children);
-          const childInputs = dungeonTypes.map((id) => {
-            const mob = id === 'dungeon_zombie' ? 'Zombie' : id === 'dungeon_skeleton' ? 'Skeleton' : 'Spider';
-            const input = makeRow(mob, id, counts.get(id) || 0, available.has(id), children);
-            input.addEventListener('change', () => { if (input.checked) enabledTypes.add(id); else enabledTypes.delete(id); const selected = childInputs.filter((item) => item.checked).length; parent.checked = selected === childInputs.filter((item) => !item.disabled).length; parent.indeterminate = selected > 0 && !parent.checked; refreshPoints(); });
-            return input;
-          });
-          parent.addEventListener('change', () => { for (const input of childInputs) { if (input.disabled) continue; input.checked = parent.checked; if (parent.checked) enabledTypes.add(input.dataset.type); else enabledTypes.delete(input.dataset.type); } parent.indeterminate = false; refreshPoints(); });
-          if (dungeonRadius) { const scope = document.createElement('p'); scope.className = 'minedev-seed-dungeon-scope'; scope.textContent = 'Geradas por setor no mapa, conforme a área é carregada'; group.append(scope); }
-        } else {
-          const input = makeRow(label, type, counts.get(type) || 0, available.has(type));
-          input.addEventListener('change', () => { if (input.checked) enabledTypes.add(type); else enabledTypes.delete(type); refreshPoints(); });
-        }
+      structureGrid.replaceChildren();
+      for (const [label, type, iconFile] of seedCatalog) {
+        const members = type === 'dungeon' ? dungeonTypes : [type];
+        const supported = type === 'slime' ? Boolean(seedSlimeLayer) : members.some((member) => available.has(member));
+        const count = type === 'dungeon'
+          ? dungeonTypes.reduce((sum, member) => sum + Number(counts.get(member) || 0), 0)
+          : Number(type === 'slime' ? data.slime_chunks || 0 : counts.get(type) || 0);
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'minedev-structure-tile';
+        button.setAttribute('aria-pressed', 'false');
+        button.disabled = !supported;
+        const image = document.createElement('img');
+        image.src = `../../assets/icons/${iconFile}.png`;
+        image.alt = '';
+        image.loading = 'lazy';
+        const name = document.createElement('span');
+        name.textContent = label;
+        button.append(image, name);
+        button.title = supported ? `${label} · ${generatedByTile.has(type) ? 'Calculado por setor' : count.toLocaleString('pt-BR')}` : `${label} · cálculo indisponível`;
+        button.addEventListener('click', () => {
+          const active = button.getAttribute('aria-pressed') !== 'true';
+          button.setAttribute('aria-pressed', String(active));
+          button.classList.toggle('is-active', active);
+          if (type === 'slime') {
+            if (active) enableSlime(); else seedSlimeLayer?.setVisible(false);
+          } else {
+            for (const member of members) {
+              if (!available.has(member)) continue;
+              if (active) enabledTypes.add(member); else enabledTypes.delete(member);
+            }
+            refreshPoints();
+          }
+        });
+        structureGrid.append(button);
       }
-      const setTypes = (checked) => {
-        enabledTypes.clear();
-        for (const input of typeList.querySelectorAll('input:not(:disabled)')) {
-          input.checked = checked; input.indeterminate = false;
-          if (checked && input.dataset.type) enabledTypes.add(input.dataset.type);
-        }
-        if (checked) enableSlime(); else seedSlimeLayer?.setVisible(false);
-        refreshPoints();
-      };
-      $('.minedev-seed-all').addEventListener('click', () => setTypes(true));
-      $('.minedev-seed-none').addEventListener('click', () => setTypes(false));
+      structureStatus.textContent = `${seedCatalog.length} filtros · desligados por padrão`;
       renderSeedStructures();
       map.on('moveend', () => { if (seedTileRevision && enabledTypes.size) loadSeedTiles(); else renderSeedStructures(); });
-      $('.minedev-seed-controls').hidden = false;
       const total = Number(data.structure_total ?? seedStructures.length);
-      $('.minedev-seed-count').textContent = String(total);
-      status.textContent = `${total.toLocaleString('pt-BR')} locais · ${data.biomes?.length || 0} biomas · ${Number(data.slime_chunks || 0).toLocaleString('pt-BR')} slime chunks · Bedrock ${seedGeneratorVersion}`;
+      status.textContent = `${total.toLocaleString('pt-BR')} locais · ${data.biomes?.length || 0} biomas · Bedrock ${seedGeneratorVersion}`;
+      structureStatus.textContent = `${seedCatalog.length} filtros disponíveis · ${total.toLocaleString('pt-BR')} locais`;
     } catch (error) { status.textContent = error.message; }
   }
   $('.minedev-map-go').addEventListener('submit', (event) => { event.preventDefault(); const point = parseCoordinates(coordinateInput.value); if (!point) return notify('Informe X e Z válidos, separados por vírgula ou espaço.', true); go(point); notify('Mapa centralizado nas coordenadas informadas.'); });
   $('.minedev-map-collapse').addEventListener('click', (event) => { panel.classList.toggle('collapsed'); const expanded = !panel.classList.contains('collapsed'); event.currentTarget.setAttribute('aria-expanded', String(expanded)); event.currentTarget.setAttribute('aria-label', expanded ? 'Recolher ferramentas' : 'Expandir ferramentas'); event.currentTarget.textContent = expanded ? '−' : '+'; });
+  structureTrigger.addEventListener('click', () => { if (!structureModal.open) { structureModal.showModal(); structureTrigger.setAttribute('aria-expanded', 'true'); } });
+  structureModal.querySelector('.minedev-structure-close').addEventListener('click', () => structureModal.close());
+  structureModal.addEventListener('click', (event) => { if (event.target === structureModal) structureModal.close(); });
+  structureModal.addEventListener('close', () => structureTrigger.setAttribute('aria-expanded', 'false'));
+  structureModal.addEventListener('cancel', () => structureTrigger.setAttribute('aria-expanded', 'false'));
   map.on('singleclick', (event) => {
     biomeTooltip.hidden = true;
     const feature = map.forEachFeatureAtPixel(event.pixel, (candidate) => candidate.get('livePlayer') || candidate.get('seedStructure') ? candidate : null, { hitTolerance: 8 });

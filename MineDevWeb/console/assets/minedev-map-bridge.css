@@ -24,29 +24,25 @@
 .minedev-live-row strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
 .minedev-live-row span{flex:0 0 auto;color:#9cb7b3;font:10px ui-monospace,Consolas,monospace}
 div.minedev-live-row{border:1px solid #2b4037;border-radius:6px;background:#17231b}
-.minedev-seed-details{margin-top:12px;border-top:1px solid #263d2d;padding-top:9px}
-.minedev-seed-details summary{cursor:pointer;color:#cde8c8;font-weight:600}
-.minedev-seed-count{display:inline-grid;place-items:center;min-width:17px;height:17px;margin-left:4px;padding:0 4px;border-radius:5px;background:#473925;color:#f4c46f;font-size:11px}
-.minedev-seed-count:empty{display:none}
-.minedev-seed-body{margin-top:8px}
-.minedev-seed-status{margin:5px 0 8px;color:#9fb7a3;font-size:11px}
-.minedev-seed-controls>label,.minedev-seed-type-list label{display:flex;align-items:center;gap:6px;min-height:24px;font-size:12px;color:#d7e8d4}
-.minedev-seed-controls>label[hidden]{display:none}
-.minedev-seed-controls input{accent-color:#a8e36b}
-.minedev-seed-types{margin:8px 0;border-top:1px solid #263d2d;padding-top:7px}
-.minedev-seed-types summary{font-size:12px}
-.minedev-seed-type-list{display:grid;grid-template-columns:1fr 1fr;gap:3px 7px;max-height:300px;overflow:auto;margin-top:7px}
-.minedev-seed-type-list label{display:grid;grid-template-columns:14px 18px minmax(0,1fr);font-size:11px;line-height:1.2}
-.minedev-seed-type-list label span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.minedev-seed-type-list label:has(input:disabled){opacity:.55}
-.minedev-seed-dungeon{grid-column:1/-1;border:1px solid #304336;border-radius:6px;padding:4px 6px}
-.minedev-seed-dungeon-children{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3px;margin:3px 0 0 17px}
-.minedev-seed-dungeon-children label{grid-template-columns:14px minmax(0,1fr)}
-.minedev-seed-dungeon-children .minedev-seed-type-icon{display:none}
-.minedev-seed-dungeon-scope{margin:2px 0 0 18px;color:#92a99a;font-size:10px}
-.minedev-seed-type-icon{display:grid;place-items:center;width:15px;height:15px;border:1px solid color-mix(in srgb,var(--seed-marker-color),white 25%);border-radius:50%;background:var(--seed-marker-color);color:#101810;font:700 7px/1 system-ui,sans-serif;font-style:normal}
-.minedev-seed-type-actions{display:flex;gap:6px;margin:8px 0}
-.minedev-seed-type-actions button{padding:4px 9px;font-size:11px}
+.minedev-structure-trigger{position:absolute;top:76px;right:12px;z-index:12;display:grid;place-items:center;width:34px;height:34px;padding:6px;border:1px solid #456a4b;border-radius:7px;background:rgba(12,20,15,.94);color:#d8f7c2;cursor:pointer;box-shadow:0 3px 9px #0007}
+.minedev-structure-trigger:hover,.minedev-structure-trigger:focus-visible{background:#36543a}
+.minedev-structure-trigger svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.minedev-structure-modal{box-sizing:border-box;width:min(460px,calc(100vw - 24px));max-width:none;max-height:min(82vh,540px);margin:auto;padding:14px;color:#e8f4e5;border:1px solid #456a4b;border-radius:12px;background:#0c140f;box-shadow:0 18px 50px #000b;font:13px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}
+.minedev-structure-modal::backdrop{background:rgba(0,0,0,.62);backdrop-filter:blur(2px)}
+.minedev-structure-modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
+.minedev-structure-modal-head strong,.minedev-structure-modal-head small{display:block}
+.minedev-structure-modal-head strong{color:#c7f19d;font-size:15px}
+.minedev-structure-modal-head small{margin-top:2px;color:#9fb7a3;font-size:11px}
+.minedev-structure-close{display:grid;place-items:center;flex:0 0 30px;width:30px;height:30px;padding:0;border:1px solid #405744;border-radius:6px;background:#17231b;color:#cadbc8;cursor:pointer;font-size:20px;line-height:1}
+.minedev-structure-status{margin:6px 0 9px;color:#9fb7a3;font-size:11px}
+.minedev-structure-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-auto-rows:68px;gap:7px;max-height:368px;overflow-y:auto;padding:2px}
+.minedev-structure-tile{display:flex;min-width:0;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:4px 2px;border:1px solid #334238;border-radius:7px;background:#17231b;color:#cbd8c9;cursor:pointer;filter:grayscale(1);opacity:.48;transition:filter .12s ease,opacity .12s ease,border-color .12s ease,background .12s ease}
+.minedev-structure-tile img{display:block;width:38px;height:38px;object-fit:contain;image-rendering:pixelated}
+.minedev-structure-tile span{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;line-height:1.1;text-align:center}
+.minedev-structure-tile.is-active{filter:none;opacity:1;border-color:#8dcc69;background:#223526;color:#e5f6dc}
+.minedev-structure-tile:disabled{cursor:not-allowed;opacity:.23}
+.minedev-structure-tile:not(:disabled):hover,.minedev-structure-tile:not(:disabled):focus-visible{border-color:#a8e36b;opacity:.82}
+.minedev-structure-tile.is-active:hover,.minedev-structure-tile.is-active:focus-visible{opacity:1}
 .minedev-map-message{min-height:0;margin-top:7px;color:#b8de9d;font-size:11px}
 .minedev-map-message:empty{display:none}
 .minedev-map-message.error{color:#f2a4a0}
@@ -67,4 +63,4 @@ div.minedev-live-row{border:1px solid #2b4037;border-radius:6px;background:#1723
 .minedev-map-hud{position:absolute;right:12px;bottom:12px;padding:6px 9px;font:600 12px ui-monospace,Consolas,monospace;pointer-events:none}
 div.ol-zoom{top:12px;left:auto;right:12px}
 div.ol-mouse-position{display:none}
-@media(max-width:600px){.minedev-map-panel{top:8px;left:8px;width:min(300px,calc(100vw - 16px));max-height:min(44vh,340px)}.minedev-map-popup{top:auto;right:8px;bottom:8px;width:min(300px,calc(100vw - 16px));max-height:calc(100vh - 76px)}div.ol-zoom{top:8px;right:8px}.minedev-map-hud{right:8px;bottom:8px}}
+@media(max-width:600px){.minedev-map-panel{top:8px;left:8px;width:min(300px,calc(100vw - 16px));max-height:min(44vh,340px)}.minedev-map-popup{top:auto;right:8px;bottom:8px;width:min(300px,calc(100vw - 16px));max-height:calc(100vh - 76px)}div.ol-zoom{top:8px;right:8px}.minedev-structure-trigger{top:68px;right:8px}.minedev-structure-modal{padding:11px}.minedev-structure-grid{grid-auto-rows:62px;gap:5px;max-height:min(330px,calc(82vh - 105px))}.minedev-structure-tile img{width:34px;height:34px}.minedev-map-hud{right:8px;bottom:8px}}
