@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require __DIR__ . DIRECTORY_SEPARATOR . 'bootstrap.php';
+require __DIR__ . DIRECTORY_SEPARATOR . 'map_players.php';
 header('X-Content-Type-Options: nosniff');
 header('Referrer-Policy: same-origin');
 $action = (string)($_GET['action'] ?? '');
@@ -234,6 +235,208 @@ if ($action === 'map-status') {
         'world_name' => is_array($manifest) ? (string)($manifest['world_name'] ?? '') : '',
         'generated_at' => is_array($manifest) ? (string)($manifest['snapshot_at'] ?? $manifest['generated_at'] ?? '') : '',
     ]);
+}
+
+if ($action === 'map-players') {
+    reject_method('GET');
+    $instanceId = (string)($_GET['instance_id'] ?? '');
+    if (!preg_match('/^[a-z0-9][a-z0-9_-]{0,31}$/', $instanceId) || bedrock_instance_config($instanceId) === null) {
+        json_response(['error' => ['code' => 'invalid_instance', 'message' => 'Instância inválida.']], 400);
+    }
+    $cachePath = STORAGE_DIR . DIRECTORY_SEPARATOR . 'map-players-' . $instanceId . '.json';
+    $lockPath = STORAGE_DIR . DIRECTORY_SEPARATOR . 'map-players-' . $instanceId . '.lock';
+    $lock = fopen($lockPath, 'c');
+    if ($lock === false || !flock($lock, LOCK_EX)) {
+        json_response(['error' => ['code' => 'map_players_unavailable', 'message' => 'Não foi possível consultar os jogadores.']], 503);
+    }
+    try {
+        $cached = is_file($cachePath) ? json_decode((string)file_get_contents($cachePath), true) : null;
+        $now = time();
+        if (is_array($cached) && ($cached['schema_version'] ?? null) === 2 && ($cached['instance_id'] ?? null) === $instanceId &&
+            isset($cached['sampled_epoch'], $cached['refresh_seconds']) &&
+            is_int($cached['sampled_epoch']) && is_int($cached['refresh_seconds']) &&
+            $now >= $cached['sampled_epoch'] && $now - $cached['sampled_epoch'] < $cached['refresh_seconds']) {
+            $snapshot = $cached;
+        } else {
+            $telemetry = bedrock_request('/api/v1/telemetry', 'GET', null, $instanceId);
+            $players = $telemetry['data']['players'] ?? [];
+            $names = is_array($players['names'] ?? null) ? array_values(array_filter($players['names'], 'is_string')) : [];
+            $onlineCount = (int)($players['online_count'] ?? 0);
+            $ready = $telemetry['ok'] && ($telemetry['data']['server']['status'] ?? null) === 'running' &&
+                ($players['stale'] ?? true) === false && $onlineCount >= 0 && $onlineCount <= 100 &&
+                count($names) === $onlineCount && count(array_unique(array_map('strtolower', $names))) === $onlineCount;
+            $refreshSeconds = $ready ? max(6, min(30, 3 * max(1, $onlineCount))) : 5;
+            $located = [];
+            if ($ready) {
+                foreach ($names as $name) {
+                    $position = null;
+                    $command = querytarget_command($name);
+                    if ($command !== null) {
+                        $result = bedrock_request('/api/v1/commands', 'POST', ['command' => $command], $instanceId);
+                        if ($result['ok'] && !empty($result['data']['sent']) && is_array($result['data']['console_output'] ?? null)) {
+                            $position = parse_querytarget_position($result['data']['console_output']);
+                        }
+                    }
+                    $located[] = [
+                        'name' => $name,
+                        'position' => $position,
+                        'block' => $position !== null ? querytarget_block_position($position) : null,
+                    ];
+                }
+            }
+            $snapshot = [
+                'schema_version' => 2,
+                'instance_id' => $instanceId,
+                'available' => $ready,
+                'online_count' => $ready ? $onlineCount : null,
+                'players' => $located,
+                'sampled_at' => gmdate('c'),
+                'sampled_epoch' => time(),
+                'refresh_seconds' => $refreshSeconds,
+                'source' => 'querytarget',
+            ];
+            $temporary = $cachePath . '.' . bin2hex(random_bytes(6)) . '.tmp';
+            if (file_put_contents($temporary, json_encode($snapshot, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), LOCK_EX) !== false) {
+                if (!rename($temporary, $cachePath)) @unlink($temporary);
+            }
+            if (is_file($temporary)) @unlink($temporary);
+        }
+    } finally {
+        flock($lock, LOCK_UN);
+        fclose($lock);
+    }
+    unset($snapshot['sampled_epoch']);
+    header('Cache-Control: no-store');
+    json_response($snapshot);
+}
+
+if ($action === 'map-markers') {
+    if (!in_array($method, ['GET', 'PUT'], true)) {
+        header('Allow: GET, PUT');
+        json_response(['error' => ['code' => 'method_not_allowed', 'message' => 'Método não permitido.']], 405);
+    }
+    $instanceId = (string)($_GET['instance_id'] ?? '');
+    if (!preg_match('/^[a-z0-9][a-z0-9_-]{0,31}$/', $instanceId) || bedrock_instance_config($instanceId) === null) {
+        json_response(['error' => ['code' => 'invalid_instance', 'message' => 'Instância inválida.']], 400);
+    }
+    $path = STORAGE_DIR . DIRECTORY_SEPARATOR . 'map-markers-' . $instanceId . '.json';
+    $readMarkers = static function () use ($path): array {
+        if (!is_file($path)) return [];
+        $decoded = json_decode((string)file_get_contents($path), true);
+        return is_array($decoded) && array_is_list($decoded) ? $decoded : [];
+    };
+    if ($method === 'GET') {
+        $markers = with_storage_lock($readMarkers);
+        json_response(['markers' => $markers, 'revision' => hash('sha256', json_encode($markers))]);
+    }
+    $payload = read_payload();
+    $markers = $payload['markers'] ?? null;
+    if (!is_array($markers) || !array_is_list($markers) || count($markers) > 100) {
+        json_response(['error' => ['code' => 'invalid_markers', 'message' => 'Lista de marcadores inválida ou muito grande.']], 400);
+    }
+    $validated = [];
+    $seen = [];
+    foreach ($markers as $marker) {
+        if (!is_array($marker) || !isset($marker['id'], $marker['name'], $marker['x'], $marker['z']) ||
+            !is_string($marker['id']) || !preg_match('/^[a-f0-9]{16,32}$/', $marker['id']) || isset($seen[$marker['id']]) ||
+            !is_string($marker['name']) || trim($marker['name']) === '' ||
+            preg_match('//u', $marker['name']) !== 1 || preg_match_all('/./us', $marker['name']) > 64 ||
+            !is_numeric($marker['x']) || !is_numeric($marker['z']) ||
+            !is_finite((float)$marker['x']) || !is_finite((float)$marker['z']) ||
+            abs((float)$marker['x']) > 30000000 || abs((float)$marker['z']) > 30000000) {
+            json_response(['error' => ['code' => 'invalid_marker', 'message' => 'Um marcador contém nome ou coordenadas inválidas.']], 400);
+        }
+        $seen[$marker['id']] = true;
+        $validated[] = [
+            'id' => $marker['id'],
+            'name' => trim($marker['name']),
+            'x' => (int)round((float)$marker['x']),
+            'z' => (int)round((float)$marker['z']),
+        ];
+    }
+    $expectedRevision = (string)($payload['revision'] ?? '');
+    $result = with_storage_lock(static function () use ($readMarkers, $expectedRevision, $validated, $path): array {
+        $current = $readMarkers();
+        if (!hash_equals(hash('sha256', json_encode($current)), $expectedRevision)) return ['conflict' => true];
+        $temp = $path . '.' . bin2hex(random_bytes(6)) . '.tmp';
+        if (file_put_contents($temp, json_encode($validated, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), LOCK_EX) === false || !rename($temp, $path)) {
+            @unlink($temp);
+            throw new RuntimeException('Não foi possível salvar os marcadores.');
+        }
+        if (DIRECTORY_SEPARATOR !== '\\') @chmod($path, 0600);
+        return ['markers' => $validated, 'revision' => hash('sha256', json_encode($validated))];
+    });
+    if (isset($result['conflict'])) json_response(['error' => ['code' => 'markers_conflict', 'message' => 'Os marcadores mudaram em outra sessão. Recarregue a lista.']], 409);
+    audit_event(authenticated_actor(), 'map_markers_save', '', 'success', 'Instância ' . $instanceId . '; ' . count($validated) . ' marcadores');
+    json_response($result);
+}
+
+if ($action === 'seed-layer') {
+    reject_method('GET');
+    $instanceId = (string)($_GET['instance_id'] ?? '');
+    if (!preg_match('/^[a-z0-9][a-z0-9_-]{0,31}$/', $instanceId) || bedrock_instance_config($instanceId) === null) {
+        json_response(['error' => ['code' => 'invalid_instance', 'message' => 'Instância inválida.']], 400);
+    }
+    $path = STORAGE_DIR . DIRECTORY_SEPARATOR . 'seed-layer-' . $instanceId . '.json';
+    if (!is_file($path)) {
+        json_response(['error' => ['code' => 'seed_layer_missing', 'message' => 'Os dados da seed ainda não foram gerados para esta instância.']], 404);
+    }
+    $data = json_decode((string)file_get_contents($path), true);
+    $revision = is_array($data) ? (string)($data['image_revision'] ?? '') : '';
+    if (!preg_match('/^[a-f0-9]{24}$/', $revision) || ($data['instance_id'] ?? null) !== $instanceId) {
+        json_response(['error' => ['code' => 'seed_layer_invalid', 'message' => 'Arquivo da seed inválido.']], 500);
+    }
+    $data['image_url'] = '../../seed_asset.php?instance_id=' . rawurlencode($instanceId) . '&revision=' . $revision;
+    $slimeRevision = (string)($data['slime_revision'] ?? '');
+    if (preg_match('/^[a-f0-9]{24}$/', $slimeRevision)) {
+        $data['slime_url'] = '../../seed_asset.php?instance_id=' . rawurlencode($instanceId) . '&revision=' . $slimeRevision . '&kind=slime';
+    }
+    json_response($data);
+}
+
+if ($action === 'seed-tile') {
+    reject_method('GET');
+    $instanceId = (string)($_GET['instance_id'] ?? '');
+    $tileX = filter_var($_GET['x'] ?? null, FILTER_VALIDATE_INT);
+    $tileZ = filter_var($_GET['z'] ?? null, FILTER_VALIDATE_INT);
+    if (!preg_match('/^[a-z0-9][a-z0-9_-]{0,31}$/', $instanceId) || bedrock_instance_config($instanceId) === null ||
+        $tileX === false || $tileZ === false || $tileX === null || $tileZ === null ||
+        $tileX < -16 || $tileX > 15 || $tileZ < -16 || $tileZ > 15) {
+        json_response(['error' => ['code' => 'invalid_tile', 'message' => 'Setor inválido.']], 400);
+    }
+    $metadata = STORAGE_DIR . DIRECTORY_SEPARATOR . 'seed-layer-' . $instanceId . '.json';
+    $info = is_file($metadata) ? json_decode((string)file_get_contents($metadata), true) : null;
+    $revision = is_array($info) ? (string)($info['tile_revision'] ?? '') : '';
+    if (!preg_match('/^[a-f0-9]{24}$/', $revision) || ($info['instance_id'] ?? null) !== $instanceId) {
+        json_response(['error' => ['code' => 'seed_tile_missing', 'message' => 'Setores da seed indisponíveis.']], 404);
+    }
+    $path = STORAGE_DIR . DIRECTORY_SEPARATOR . 'seed-tiles-' . $instanceId . '-' . $revision . DIRECTORY_SEPARATOR . $tileX . '_' . $tileZ . '.json';
+    if (!is_file($path)) {
+        $queue = STORAGE_DIR . DIRECTORY_SEPARATOR . 'seed-jobs';
+        if (!is_dir($queue) && !mkdir($queue, 0700, true) && !is_dir($queue)) {
+            json_response(['error' => ['code' => 'seed_worker_unavailable', 'message' => 'Não foi possível criar a fila de cálculo.']], 503);
+        }
+        $jobId = hash('sha256', $instanceId . ':' . $revision . ':' . $tileX . ':' . $tileZ);
+        $jobPath = $queue . DIRECTORY_SEPARATOR . $jobId . '.json';
+        with_storage_lock(static function () use ($jobPath, $instanceId, $revision, $tileX, $tileZ): void {
+            if (is_file($jobPath)) return;
+            $temp = $jobPath . '.' . bin2hex(random_bytes(6)) . '.tmp';
+            $job = ['instance_id' => $instanceId, 'revision' => $revision, 'x' => $tileX, 'z' => $tileZ,
+                'created_at' => time(), 'status' => 'queued'];
+            if (file_put_contents($temp, json_encode($job, JSON_UNESCAPED_SLASHES), LOCK_EX) === false || !rename($temp, $jobPath)) {
+                @unlink($temp);
+                throw new RuntimeException('Não foi possível enfileirar o cálculo do setor.');
+            }
+            @chmod($jobPath, 0600);
+        });
+        header('Retry-After: 3');
+        json_response(['instance_id' => $instanceId, 'revision' => $revision, 'x' => $tileX, 'z' => $tileZ,
+            'status' => 'queued', 'points' => []], 202);
+    }
+    $points = json_decode((string)file_get_contents($path), true);
+    if (!is_array($points)) json_response(['error' => ['code' => 'seed_tile_invalid', 'message' => 'Setor calculado inválido.']], 500);
+    json_response(['instance_id' => $instanceId, 'revision' => $revision, 'x' => $tileX, 'z' => $tileZ,
+        'status' => 'ready', 'points' => $points]);
 }
 
 if ($action === 'history') {

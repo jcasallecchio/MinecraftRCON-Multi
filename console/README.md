@@ -90,7 +90,7 @@ O mapa é um snapshot web privado por instância. Ele representa os chunks grava
 Para gerar ou atualizar o mapa:
 
 1. Baixe o **uNmINeD CLI** somente pelo [site oficial](https://unmined.net/downloads/). O repositório não distribui o executável: a licença do uNmINeD permite uso gratuito, mas proíbe redistribuí-lo ou modificá-lo.
-2. No Windows que consegue acessar o compartilhamento do servidor, abra PowerShell na pasta instalada `minedev/` e execute o script abaixo. Ele lê os dados da instância no `.env`, para somente aquele mundo, aguarda o encerramento confirmado no log, copia o LevelDB fechado, renderiza em uma pasta temporária e publica o mapa por troca atômica. O script sempre solicita a inicialização da instância ao terminar.
+2. No Windows que consegue acessar o compartilhamento do servidor, abra PowerShell na pasta instalada `minedev/` e execute o script abaixo. Ele lê os dados da instância no `.env`, para somente aquele mundo, aguarda a telemetria confirmar o encerramento da sessão Bedrock, copia o LevelDB fechado, renderiza em uma pasta temporária e publica o mapa por troca atômica. O script sempre solicita a inicialização da instância ao terminar.
 
 ~~~powershell
 & '.\tools\refresh-map.ps1' `
@@ -102,7 +102,64 @@ Para gerar ou atualizar o mapa:
 
    Troque o compartilhamento, o nome e o ID pelos seus dados. O script usa o token do `.env` apenas em memória e não o imprime. Depois que `/health` confirmar a instância online, abra **Mapa** no MineDev e clique em **Recarregar mapa**. Os arquivos do mundo e os mapas ficam fora do GitHub.
 
-Uma cópia do mundo de Abydos foi gerada e publicada na instalação usada neste projeto. Ela contém somente os 848 chunks salvos naquele snapshot. Instâncias sem exportação própria mostram um estado vazio até que seus mapas sejam publicados.
+Na instalação usada neste projeto, Abydos e Colinas têm exportações próprias. Os mapas representam somente os chunks salvos no momento de cada snapshot e não são distribuídos no GitHub. Novas instâncias mostram um estado vazio até que seu mapa seja publicado.
+
+Cada instância precisa de uma exportação própria. O uNmINeD usa as coordenadas X/Z do jogo para o mapa, a grade e os marcadores. O script instala `assets/minedev-map-bridge.js` em cada exportação, permitindo que as próximas funções do MineDev usem a mesma transformação de coordenadas do renderizador. Personalizações devem ser feitas no código do MineDev; editar `storage/maps/<id>/index.html` não é persistente.
+
+Para manter marcadores personalizados entre snapshots, edite `storage/map-overlays/<id>/custom.markers.js` na instalação do console. Na primeira atualização de um mapa existente, o script copia para esse local o arquivo de marcadores publicado anteriormente. Nas atualizações seguintes, essa cópia privada é a origem dos marcadores. O diretório `storage/` continua protegido contra acesso HTTP direto.
+
+Na tela **Mapa**, mova o cursor ou toque no terreno para consultar X/Z. Digite `X, Z` e clique em **Ir** para centralizar; clique em um ponto ou informe coordenadas, dê um nome e clique em **Salvar** para criar um marcador. Os marcadores ficam em `storage/map-markers-<id>.json`, separados por instância, e continuam disponíveis em outros dispositivos e após novos snapshots. A lista permite voltar a um marcador ou excluí-lo. O limite é de 100 por instância. Clique em um marcador de estrutura, jogador ou local salvo para ver detalhes e copiar X/Z. Estruturas exibem a origem prevista, bioma estimado quando disponível e distância horizontal ao jogador online mais próximo; posição Y não é calculada para estruturas. O mapa de terreno só muda quando um novo snapshot é publicado.
+
+O zoom vai de uma visão ampla até **8 pixels por bloco (8:1)**. Novos snapshots são gerados pelo uNmINeD com `--zoomin=3`. Para um mapa antigo publicado em 1:1, `python tools/expand-map-zoom.py storage/maps/<id>` cria os níveis 2:1, 4:1 e 8:1 a partir das cores já salvas, sem parar o jogo. Esse aumento preserva a aparência em pixels do snapshot antigo; o próximo snapshot renderizado pelo uNmINeD produzirá os tiles de alta resolução diretamente. O script exige Python 3 com Pillow (`python -m pip install Pillow`).
+
+A previsão de biomas usa amostras de 16 em 16 blocos, exibidas sem desfoque por baixo dos chunks salvos. O terreno real do snapshot aparece por cima, sem transparência nem tintura. Fora dos chunks salvos, as cores continuam sendo previsões da seed, não detalhes reais do terreno.
+
+### Exploração pela seed
+
+O MineDev acrescenta ao snapshot camadas de **biomas, locais e slime chunks** para o Overworld, inclusive fora dos chunks já explorados. Em **Explorar pela seed**, o mapa de biomas permanece como fundo e os 27 filtros de locais começam desmarcados. Ative somente os tipos desejados, consulte a legenda ou use **Todos disponíveis** e **Nenhum**. Dungeon tem seleção adicional por zumbi, esqueleto e aranha. Clique no mapa para consultar o bioma; a indicação de slime chunk aparece quando esse filtro estiver ligado. Os arquivos são separados por instância e entregues apenas após login. A geração é feita fora do servidor Bedrock: nenhum mundo precisa parar para isso.
+
+O catálogo mostra Spawn Point, Slime Chunk, Village, Ancient City, Dungeon, Mansion, Monument, Outpost, Mineshaft, Ruined Portal, Jungle Temple, Desert Temple, Witch Hut, Treasure, Shipwreck, Igloo, Ocean Ruins, Fossil, Cave, Ravine, Lava Pool, Geode, Ore Veins, Desert Well, Trail Ruins, Trial Chamber e Camp, nessa ordem. Fossil, Cave e Ore Veins ficam desabilitados enquanto não houver dados calculados; não são representados por marcadores fictícios. Masmorras aparecem separadas pelo tipo de gerador: zumbi, esqueleto ou aranha, com X/Y/Z. Os demais locais disponíveis cobrem todo o raio gerado e não dependem da distância de um jogador; as masmorras cobrem o raio menor definido em `DungeonRadius`, indicado ao lado do filtro. O catálogo amplo é dividido em setores de 2.048 blocos, carregados conforme a navegação; o mapa desenha até 2.500 marcadores da área visível. A lista de posições próximas considera os setores carregados.
+
+Os dados usam o código aberto [FragrantResult186/cubiomes-bedrock](https://github.com/FragrantResult186/cubiomes-bedrock), sob licença MIT, fixado no commit `294c72ab0392dd818a91d293dbd5774d4874d64b`. Esta revisão modela as regras **Bedrock 26.60**; o servidor deste projeto usa **1.26.66.1**. O mapa de biomas é amostrado em **Y 64**. A busca de masmorras avalia terreno e cavernas em 3D, por isso é limitada a uma área configurável; uma varredura de 32.768 blocos de raio pode levar dezenas de horas. O gerador não calcula aqui cavernas individuais, veios de minério, fósseis, loot ou a coordenada Y dos demais locais. Esses dados exigem outras rotinas ou leitura dos chunks. A posição de spawn calculada pelo motor pode diferir por causa da seleção de blocos de grama. Pacotes que alterem a geração, checagens de terreno e chunks criados em outra versão podem mudar posições. O terreno do snapshot mostra o que foi salvo no mundo.
+
+Para gerar a camada no Windows, tenha **WSL com Ubuntu, gcc e make**, **Python 3** no Windows, uma cópia local deste repositório e uma pasta local com o código do motor:
+
+~~~powershell
+git clone https://github.com/FragrantResult186/cubiomes-bedrock.git C:\cubiomes-bedrock
+git -C C:\cubiomes-bedrock checkout 294c72ab0392dd818a91d293dbd5774d4874d64b
+wsl --user root --exec apt-get update
+wsl --user root --exec apt-get install -y gcc make
+& '.\console\tools\generate-seed-layer.ps1' `
+  -InstanceId 'main' `
+  -Seed 'SEED_DO_MUNDO' `
+  -EnginePath 'C:\cubiomes-bedrock' `
+  -ConsoleRoot '\\SERVIDOR\share\htdocs\minedev' `
+  -Radius 32768 `
+  -DungeonRadius 512 `
+  -ServerVersion '1.26.66.1'
+~~~
+
+Execute os comandos na raiz da cópia local do repositório. Ajuste ID, seed, caminhos e versão conforme seu ambiente. Para outra instância, execute novamente com o ID correspondente. `Radius` aceita múltiplos de 16 entre 512 e 32768 blocos; `DungeonRadius` aceita múltiplos de 16 até esse raio, partindo de X/Z 0. Aumentar o raio das masmorras aumenta muito o tempo de cálculo. A ferramenta compila o motor localmente, calcula os dados, valida os arquivos e publica `storage/seed-layer-<id>.json`, setores iniciais `storage/seed-tiles-<id>-<revisão>/` e imagens PNG versionadas de biomas e slime chunks. Ela também amplia a área navegável do mapa publicado; o atualizador de snapshots preserva essa área nas próximas exportações. Recarregue a aba **Mapa** após publicar. No Bedrock, a regra dos slime chunks usa coordenadas e não depende da seed.
+
+#### Cálculo progressivo de setores
+
+Quando a API recebe um setor que ainda não está no cache, grava um trabalho privado em `storage/seed-jobs/` e responde `202`. O mapa aguarda o worker e repete a consulta. Execute o worker em um computador Windows que tenha acesso à pasta do console e WSL:
+
+~~~powershell
+& '.\console\tools\seed-tile-worker.ps1' `
+  -EnginePath 'C:\cubiomes-bedrock' `
+  -ConsoleRoot '\\SERVIDOR\share\htdocs\minedev'
+~~~
+
+O worker compila `seed-tile.c` uma vez, verifica a seed e revisão no manifesto da instância, calcula somente os pontos daquele setor de 2.048 blocos e grava o JSON por troca atômica. Deixe-o em execução enquanto quiser calcular setores novos; ele pode rodar em uma máquina separada, desde que veja o mesmo `storage/`. Setores já armazenados são servidos direto do cache sem novo cálculo. O worker não precisa de token RCON e não reinicia o Bedrock. A fila, o gerador e os dados permanecem no ambiente local.
+
+### Jogadores ao vivo (etapa 4)
+
+O painel **Jogadores ao vivo** usa a telemetria de nomes online e o comando Bedrock `querytarget` pela API RCON existente. O teste de `querytarget @a` retornou dimensões e coordenadas, mas não nomes; por isso o MineDev consulta cada nome com um seletor específico para associar a posição com segurança. A atualização é limitada por instância a aproximadamente **6–30 segundos**, conforme a quantidade de jogadores, para preservar a cota de comandos do servidor. O MineDev não instala pacote de script nem precisa reiniciar o mundo para mostrar posições.
+
+Jogadores no **Overworld** aparecem no mapa; clique no marcador ou na lista para centralizar. Jogadores no Nether ou End aparecem somente na lista, com sua dimensão e coordenadas. Respostas incompletas, jogadores offline e amostras vencidas não geram marcadores. A localização é uma amostra, não um rastreamento contínuo. Os dados ficam em cache privado por instância em `storage/map-players-<id>.json`; o mapa exige login e não expõe o token RCON ao navegador.
+
+O ponto no mapa conserva X/Z fracionários do RCON. Os números exibidos seguem as coordenadas de bloco do jogo: X/Z são arredondados para baixo, inclusive quando negativos. Em testes com jogadores em pé, o Y informado por `querytarget` ficou **1,62 bloco acima** do Y visto no jogo; o painel subtrai essa altura para exibir o bloco dos pés. Se o jogador estiver agachado, nadando ou em outra pose, o Y pode diferir até que a pose seja obtida por outra fonte.
 
 ### No celular e como aplicativo
 

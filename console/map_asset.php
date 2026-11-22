@@ -58,7 +58,7 @@ session_write_close();
 header('Content-Type: ' . $mimeTypes[$extension]);
 header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: SAMEORIGIN');
-header('Cache-Control: private, max-age=3600');
+header('Cache-Control: ' . ($extension === 'html' || basename($fileReal) === 'unmined.map.properties.js' ? 'private, no-store' : 'private, max-age=3600'));
 if ($extension === 'html') {
     header("Content-Security-Policy: default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'self'");
 }

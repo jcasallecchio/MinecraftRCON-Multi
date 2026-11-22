@@ -256,15 +256,17 @@ function bedrock_instance_config(string $instanceId): ?array
 }
 function bedrock_request(string $path, string $method = 'GET', ?array $payload = null, string $instanceId = 'main'): array
 {
+    static $verifiedInstances = [];
     $instance = bedrock_instance_config($instanceId);
     if ($instance === null) {
         return ['ok' => false, 'http_status' => 0, 'error' => 'Instância Bedrock inválida ou sem configuração no .env.', 'data' => null];
     }
     // Verify the destination before reading another world's data or sending a command.
     // The legacy single-instance configuration has no instance ID to compare.
-    if ($GLOBALS['BEDROCK_INSTANCES_JSON'] !== '' && $path !== '/api/v1/info') {
+    if ($GLOBALS['BEDROCK_INSTANCES_JSON'] !== '' && $path !== '/api/v1/info' && !isset($verifiedInstances[$instanceId])) {
         $identity = bedrock_request('/api/v1/info', 'GET', null, $instanceId);
         if (!$identity['ok']) return $identity;
+        $verifiedInstances[$instanceId] = true;
     }
     $url = $instance['url'] . $path;
     $parts = parse_url($url);
