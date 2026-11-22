@@ -93,7 +93,7 @@
     biomeTooltip.style.left = `${Math.max(8, Math.min(window.innerWidth - width - 8, x + 12))}px`;
     biomeTooltip.style.top = `${Math.max(8, Math.min(window.innerHeight - height - 8, y + 12))}px`;
     window.clearTimeout(biomeTooltipTimer);
-    biomeTooltipTimer = window.setTimeout(() => { biomeTooltip.hidden = true; }, 2600);
+    biomeTooltipTimer = window.setTimeout(() => { biomeTooltip.hidden = true; }, 1000);
   }
   function parseCoordinates(value) {
     const match = /^\s*(-?\d{1,8})\s*[,;\s]\s*(-?\d{1,8})\s*$/.exec(value);
