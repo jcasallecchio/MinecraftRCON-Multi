@@ -65,4 +65,21 @@ div.minedev-live-row{border:1px solid #2b4037;border-radius:6px;background:#1723
 div.ol-zoom{top:12px;left:auto;right:12px}
 div.ol-mouse-position{display:none}
 html,body,#map,.ol-viewport{background-color:#bab9dd}
-@media(max-width:600px){.minedev-map-panel,.minedev-map-panel.collapsed{top:8px;left:8px;width:min(300px,calc(100vw - 16px));max-height:min(44vh,340px)}.minedev-map-popup{top:auto;right:8px;bottom:8px;width:min(300px,calc(100vw - 16px));max-height:calc(100vh - 76px)}.minedev-map-popup.is-seed-location{width:min(300px,calc(100vw - 16px))}div.ol-zoom{top:8px;right:8px}.minedev-structure-trigger{top:68px;right:8px}.minedev-structure-modal{padding:9px}.minedev-structure-grid{--tile-row:clamp(30px,min(7.5vh,calc((100vh - 175px)/6)),54px);gap:4px}.minedev-map-hud{right:8px;bottom:8px}}
+@media(max-width:600px){
+  .minedev-map-panel,.minedev-map-panel.collapsed{top:8px;left:8px;width:min(330px,calc(100vw - 76px));max-height:min(48dvh,360px);overflow:auto}
+  .minedev-map-panel.collapsed{overflow:hidden}
+  .minedev-map-heading{min-height:44px;padding:6px 8px 6px 11px}
+  .minedev-map-heading strong{font-size:13px}
+  .minedev-map-collapse{width:34px;height:34px}
+  .minedev-map-body{padding:8px 10px 10px}
+  .minedev-map-field input{height:40px;font-size:13px}
+  .minedev-map-field button{min-width:44px}
+  .minedev-live-list{max-height:120px}
+  .minedev-map-popup,.minedev-map-popup.is-seed-location{top:auto;left:8px;right:8px;bottom:8px;width:auto;max-height:min(46dvh,300px);overflow:auto}
+  div.ol-zoom{top:8px;right:8px}
+  div.ol-zoom button{width:40px;height:40px;font-size:22px}
+  .minedev-structure-trigger{top:100px;right:8px;width:40px;height:40px}
+  .minedev-structure-modal{padding:9px;max-height:calc(100dvh - 16px)}
+  .minedev-structure-grid{--tile-row:clamp(30px,min(7.5dvh,calc((100dvh - 175px)/6)),54px);gap:4px}
+  .minedev-map-hud{right:8px;bottom:8px;font-size:10px}
+}

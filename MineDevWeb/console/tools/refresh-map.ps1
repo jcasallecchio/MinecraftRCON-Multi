@@ -201,7 +201,7 @@ try {
     if (-not $mapHtml.Contains($propertiesReference)) { throw 'A referência às propriedades do mapa não foi encontrada no HTML exportado.' }
     $mapRevision = [guid]::NewGuid().ToString('N')
     $mapHtml = $mapHtml.Replace($propertiesReference, "src=`"unmined.map.properties.js?v=$mapRevision`"")
-    $mapHtml = $mapHtml.Replace('</body>', "    <script src=`"minedev-map-bridge.js?v=38`"></script>`r`n</body>")
+    $mapHtml = $mapHtml.Replace('</body>', "    <script src=`"minedev-map-bridge.js?v=39`"></script>`r`n</body>")
     $utf8WithoutBom = [System.Text.UTF8Encoding]::new($false)
     [System.IO.File]::WriteAllText($indexPath, $mapHtml, $utf8WithoutBom)
 
@@ -255,7 +255,7 @@ try {
         $dimensionHtml = [System.IO.File]::ReadAllText($dimensionIndex)
         if (-not $dimensionHtml.Contains($propertiesReference) -or -not $dimensionHtml.Contains('</body>')) { throw "HTML do mapa do $dimension inesperado." }
         $dimensionHtml = $dimensionHtml.Replace($propertiesReference, "src=`"unmined.map.properties.js?v=$([guid]::NewGuid().ToString('N'))`"")
-        $dimensionHtml = $dimensionHtml.Replace('</body>', "    <script src=`"minedev-map-bridge.js?v=38`"></script>`r`n</body>")
+        $dimensionHtml = $dimensionHtml.Replace('</body>', "    <script src=`"minedev-map-bridge.js?v=39`"></script>`r`n</body>")
         [System.IO.File]::WriteAllText($dimensionIndex, $dimensionHtml, $utf8WithoutBom)
         $dimensionMetadata = [ordered]@{ world_name = $WorldName; instance_id = $InstanceId; dimension = $dimension; snapshot_at = $snapshotAt.ToString('o'); generated_at = [DateTimeOffset]::Now.ToString('o'); renderer = 'uNmINeD CLI' }
         [System.IO.File]::WriteAllText((Join-Path $dimensionPath 'map-info.json'), ($dimensionMetadata | ConvertTo-Json -Depth 4), $utf8WithoutBom)

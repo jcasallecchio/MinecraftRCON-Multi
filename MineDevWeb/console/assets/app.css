@@ -247,10 +247,25 @@ body.authenticated .view.active#view-map{display:flex;flex:1;min-height:0;flex-d
 .world-map-empty p{max-width:620px;margin:0;color:var(--muted);font-size:11px;line-height:1.6}
 .world-map-empty code{color:#c4d2c5;font:10px var(--mono)}
 @media(max-width:780px){
-  .world-map-toolbar{align-items:flex-start;flex-direction:column;gap:8px;padding:10px}
-  .world-map-actions{width:100%;justify-content:space-between;gap:6px}
-  .world-map-updated{font-size:9px}
-  .world-map-actions .ghost-button{padding:7px 8px;font-size:9px}
-  .world-map-frame-wrap iframe{min-height:300px}
+  .tabs{scrollbar-width:none;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{flex:0 0 auto;scroll-snap-align:start}
+  .world-map-toolbar{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:5px 8px;min-height:0;padding:9px 10px}
+  .world-map-title{grid-column:1;grid-row:1;gap:1px}
+  .world-map-title strong{font-size:12px}
+  .world-map-title span{font-size:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .world-map-actions{display:contents}
+  .world-map-dimension-label{display:none}
+  #mapDimension{grid-column:2;grid-row:1;min-height:35px;max-width:124px;font-size:11px}
+  .world-map-updated{grid-column:1/-1;grid-row:2;font-size:9px}
+  .world-map-actions .ghost-button{min-height:36px;padding:6px 8px;font-size:10px;border:1px solid var(--line);text-align:center}
+  #mapRefresh{grid-column:1;grid-row:3;justify-self:start}
+  #mapOpen{grid-column:2;grid-row:3;justify-self:end;color:var(--green2)}
+  .world-map-frame-wrap iframe{min-height:0}
   .world-map-empty{padding:20px 14px}
+  body.map-expanded{overflow:hidden}
+  body.map-expanded .world-map-card{position:fixed;inset:0;z-index:100;border:0;border-radius:0;min-height:0;height:100dvh;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+  body.map-expanded .world-map-toolbar{flex:0 0 auto}
+  body.map-expanded .world-map-frame-wrap{flex:1;min-height:0}
+  body.map-expanded .world-map-frame-wrap iframe{height:100%;min-height:0}
 }

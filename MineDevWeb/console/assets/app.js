@@ -208,6 +208,29 @@
       loadMapStatus(true);
     });
   }
+  const mapOpen = $('#mapOpen');
+  const mobileMap = window.matchMedia('(max-width: 780px)');
+  function closeExpandedMap() {
+    document.body.classList.remove('map-expanded');
+    mapOpen.textContent = 'Abrir em outra aba ↗';
+    mapOpen.setAttribute('aria-label', 'Abrir mapa em outra aba no computador ou em tela cheia no celular');
+  }
+  mapOpen?.addEventListener('click', (event) => {
+    if (!mobileMap.matches) return;
+    event.preventDefault();
+    const expanded = document.body.classList.toggle('map-expanded');
+    mapOpen.textContent = expanded ? 'Fechar mapa ×' : 'Tela cheia ⛶';
+    mapOpen.setAttribute('aria-label', expanded ? 'Fechar mapa em tela cheia' : 'Abrir mapa em tela cheia');
+    if (expanded) $('#worldMapFrame')?.focus();
+  });
+  mobileMap.addEventListener('change', () => { if (!mobileMap.matches) closeExpandedMap(); });
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && document.body.classList.contains('map-expanded')) closeExpandedMap();
+  });
+  if (mobileMap.matches && mapOpen) {
+    mapOpen.textContent = 'Tela cheia ⛶';
+    mapOpen.setAttribute('aria-label', 'Abrir mapa em tela cheia');
+  }
 
   function propertiesDirty() {
     return !!propertiesRevision && $('#propertiesEditor').value !== propertiesOriginal;

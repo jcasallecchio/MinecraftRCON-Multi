@@ -15,7 +15,7 @@
   window.MineDevMap = Object.freeze({ map, gameToMap, mapToGame, centerAt(x, z) { unmined.center([Number(x), Number(z)]); } });
   const css = document.createElement('link');
   css.rel = 'stylesheet';
-  css.href = 'minedev-map-bridge.css?v=38';
+  css.href = 'minedev-map-bridge.css?v=39';
   document.head.append(css);
 
   const panel = document.createElement('section');
@@ -177,7 +177,7 @@
     const details = document.createElement('dl'); details.className = 'minedev-popup-details';
     const addDetail = (term, value) => { const dt = document.createElement('dt'); dt.textContent = term; const dd = document.createElement('dd'); dd.textContent = value; details.append(dt, dd); };
     addDetail('Coordenadas', kind === 'player' && Number.isInteger(item.block?.y) ? `X ${x} · Y ${item.block.y} · Z ${z}` : Number.isInteger(item.y) ? `X ${x} · Y ${item.y} · Z ${z}` : `X ${x} · Z ${z}`);
-    addDetail('Dimensão', 'Overworld');
+    addDetail('Dimensão', dimension === 'nether' ? 'Nether' : dimension === 'end' ? 'End' : 'Overworld');
     if (kind !== 'player') {
       const biome = seedBiomeAt?.({ x, z });
       if (biome) addDetail('Bioma em Y 64', formatBiomeName(biome));
@@ -437,7 +437,15 @@
     } catch (error) { status.textContent = error.message; status.hidden = false; }
   }
   $('.minedev-map-go').addEventListener('submit', (event) => { event.preventDefault(); const point = parseCoordinates(coordinateInput.value); if (!point) return notify('Informe X e Z válidos, separados por vírgula ou espaço.', true); go(point); notify('Mapa centralizado nas coordenadas informadas.'); });
-  $('.minedev-map-collapse').addEventListener('click', (event) => { panel.classList.toggle('collapsed'); const expanded = !panel.classList.contains('collapsed'); event.currentTarget.setAttribute('aria-expanded', String(expanded)); event.currentTarget.setAttribute('aria-label', expanded ? 'Recolher ferramentas' : 'Expandir ferramentas'); event.currentTarget.textContent = expanded ? '−' : '+'; });
+  const collapseButton = $('.minedev-map-collapse');
+  function setPanelCollapsed(collapsed) {
+    panel.classList.toggle('collapsed', collapsed);
+    collapseButton.setAttribute('aria-expanded', String(!collapsed));
+    collapseButton.setAttribute('aria-label', collapsed ? 'Expandir ferramentas' : 'Recolher ferramentas');
+    collapseButton.textContent = collapsed ? '+' : '−';
+  }
+  collapseButton.addEventListener('click', () => setPanelCollapsed(!panel.classList.contains('collapsed')));
+  if (window.matchMedia('(max-width: 600px)').matches) setPanelCollapsed(true);
   structureTrigger.addEventListener('click', () => { if (!structureModal.open) { structureModal.showModal(); structureTrigger.setAttribute('aria-expanded', 'true'); } });
   structureModal.querySelector('.minedev-structure-close').addEventListener('click', () => structureModal.close());
   structureModal.addEventListener('click', (event) => { if (event.target === structureModal) structureModal.close(); });
