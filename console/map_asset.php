@@ -20,6 +20,12 @@ if (str_contains($asset, "\0") || str_contains($asset, '\\') || str_starts_with(
     exit;
 }
 $segments = explode('/', $asset);
+if (in_array($segments[0], ['nether', 'end'], true)) {
+    $dimension = array_shift($segments);
+    if (!$segments || $segments === ['']) $segments = ['index.html'];
+} else {
+    $dimension = 'overworld';
+}
 foreach ($segments as $segment) {
     if ($segment === '' || $segment === '.' || $segment === '..' || str_starts_with($segment, '.')) {
         http_response_code(404);
@@ -28,6 +34,7 @@ foreach ($segments as $segment) {
 }
 
 $mapRoot = STORAGE_DIR . DIRECTORY_SEPARATOR . 'maps' . DIRECTORY_SEPARATOR . $instanceId;
+if ($dimension !== 'overworld') $mapRoot .= DIRECTORY_SEPARATOR . $dimension;
 $rootReal = realpath($mapRoot);
 $fileReal = realpath($mapRoot . DIRECTORY_SEPARATOR . implode(DIRECTORY_SEPARATOR, $segments));
 if ($rootReal === false || $fileReal === false || !is_file($fileReal) || !str_starts_with($fileReal, $rootReal . DIRECTORY_SEPARATOR)) {

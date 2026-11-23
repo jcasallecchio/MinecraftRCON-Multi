@@ -201,7 +201,7 @@ try {
     if (-not $mapHtml.Contains($propertiesReference)) { throw 'A referência às propriedades do mapa não foi encontrada no HTML exportado.' }
     $mapRevision = [guid]::NewGuid().ToString('N')
     $mapHtml = $mapHtml.Replace($propertiesReference, "src=`"unmined.map.properties.js?v=$mapRevision`"")
-    $mapHtml = $mapHtml.Replace('</body>', "    <script src=`"minedev-map-bridge.js?v=37`"></script>`r`n</body>")
+    $mapHtml = $mapHtml.Replace('</body>', "    <script src=`"minedev-map-bridge.js?v=38`"></script>`r`n</body>")
     $utf8WithoutBom = [System.Text.UTF8Encoding]::new($false)
     [System.IO.File]::WriteAllText($indexPath, $mapHtml, $utf8WithoutBom)
 
@@ -213,6 +213,55 @@ try {
         renderer = 'uNmINeD CLI'
         dimensions = @('overworld')
     }
+    [System.IO.File]::WriteAllText((Join-Path $stagePath 'map-info.json'), ($metadata | ConvertTo-Json -Depth 4), $utf8WithoutBom)
+
+    $availableDimensions = @('overworld')
+    foreach ($dimension in @('nether', 'end')) {
+        $dimensionPath = Join-Path $stagePath $dimension
+        $previousNativePreference = $PSNativeCommandUseErrorActionPreference
+        $PSNativeCommandUseErrorActionPreference = $false
+        try {
+            $dimensionOutput = & $RendererPath web render "--world=$snapshotPath" "--output=$dimensionPath" "--dimension=$dimension" --imageformat=png --zoomout=10 --zoomin=3 --chunkprocessors=2 2>&1 | Out-String
+            $dimensionExitCode = $LASTEXITCODE
+        } finally { $PSNativeCommandUseErrorActionPreference = $previousNativePreference }
+        if ($dimensionExitCode -ne 0) {
+            if ($dimensionOutput -match 'Cannot open dimension') {
+                Write-Warning "Dimensão $dimension sem dados acessíveis no snapshot; mapa ainda não disponível."
+                if (Test-Path -LiteralPath $dimensionPath) { Remove-Item -LiteralPath $dimensionPath -Recurse -Force }
+                continue
+            }
+            throw "uNmINeD falhou ao renderizar $dimension (código $dimensionExitCode): $dimensionOutput"
+        }
+        $dimensionIndex = Join-Path $dimensionPath 'index.html'
+        $alternateIndex = Join-Path $dimensionPath 'unmined.index.html'
+        if (-not (Test-Path -LiteralPath $dimensionIndex -PathType Leaf) -and (Test-Path -LiteralPath $alternateIndex -PathType Leaf)) {
+            Move-Item -LiteralPath $alternateIndex -Destination $dimensionIndex
+        }
+        if (-not (Test-Path -LiteralPath $dimensionIndex -PathType Leaf)) { throw "uNmINeD não produziu mapa do $dimension." }
+        Copy-Item -LiteralPath $bridgeSource -Destination (Join-Path $dimensionPath 'minedev-map-bridge.js') -Force
+        Copy-Item -LiteralPath $bridgeStyle -Destination (Join-Path $dimensionPath 'minedev-map-bridge.css') -Force
+        $dimensionPropertiesPath = Join-Path $dimensionPath 'unmined.map.properties.js'
+        $dimensionProperties = [System.IO.File]::ReadAllText($dimensionPropertiesPath)
+        foreach ($field in $limits.Keys) {
+            $pattern = '(?m)(\b' + $field + ':\s*)(-?\d+)'
+            $matches = [regex]::Matches($dimensionProperties, $pattern)
+            if ($matches.Count -ne 1) { throw "Campo $field inesperado no mapa do $dimension." }
+            $current = [int]$matches[0].Groups[2].Value
+            $limit = [int]$limits[$field]
+            $value = if ($field.StartsWith('min')) { [math]::Min($current, $limit) } else { [math]::Max($current, $limit) }
+            $dimensionProperties = [regex]::Replace($dimensionProperties, $pattern, [System.Text.RegularExpressions.MatchEvaluator]{ param($match) $match.Groups[1].Value + $value })
+        }
+        [System.IO.File]::WriteAllText($dimensionPropertiesPath, $dimensionProperties, $utf8WithoutBom)
+        $dimensionHtml = [System.IO.File]::ReadAllText($dimensionIndex)
+        if (-not $dimensionHtml.Contains($propertiesReference) -or -not $dimensionHtml.Contains('</body>')) { throw "HTML do mapa do $dimension inesperado." }
+        $dimensionHtml = $dimensionHtml.Replace($propertiesReference, "src=`"unmined.map.properties.js?v=$([guid]::NewGuid().ToString('N'))`"")
+        $dimensionHtml = $dimensionHtml.Replace('</body>', "    <script src=`"minedev-map-bridge.js?v=38`"></script>`r`n</body>")
+        [System.IO.File]::WriteAllText($dimensionIndex, $dimensionHtml, $utf8WithoutBom)
+        $dimensionMetadata = [ordered]@{ world_name = $WorldName; instance_id = $InstanceId; dimension = $dimension; snapshot_at = $snapshotAt.ToString('o'); generated_at = [DateTimeOffset]::Now.ToString('o'); renderer = 'uNmINeD CLI' }
+        [System.IO.File]::WriteAllText((Join-Path $dimensionPath 'map-info.json'), ($dimensionMetadata | ConvertTo-Json -Depth 4), $utf8WithoutBom)
+        $availableDimensions += $dimension
+    }
+    $metadata.dimensions = $availableDimensions
     [System.IO.File]::WriteAllText((Join-Path $stagePath 'map-info.json'), ($metadata | ConvertTo-Json -Depth 4), $utf8WithoutBom)
 
     $backupPath = Assert-ChildPath (Join-Path $mapsRoot ".backup-$InstanceId-$([guid]::NewGuid().ToString('N'))") $mapsRoot
@@ -229,7 +278,13 @@ try {
     }
     if ($hadPreviousMap -and (Test-Path -LiteralPath $backupPath -PathType Container)) {
         $safeBackup = Assert-ChildPath $backupPath $mapsRoot
-        Remove-Item -LiteralPath $safeBackup -Recurse -Force
+        for ($attempt = 1; $attempt -le 3; $attempt++) {
+            try { Remove-Item -LiteralPath $safeBackup -Recurse -Force -ErrorAction Stop; break }
+            catch {
+                if ($attempt -eq 3) { Write-Warning "Não foi possível remover o mapa antigo em ${safeBackup}: $($_.Exception.Message)" }
+                else { Start-Sleep -Seconds 2 }
+            }
+        }
         $backupPath = $null
     }
     Write-Host "Mapa de '$WorldName' publicado em $mapPath."
@@ -264,7 +319,13 @@ try {
     }
     if ($stagePath -and (Test-Path -LiteralPath $stagePath -PathType Container)) {
         $safeStage = Assert-ChildPath $stagePath $mapsRoot
-        Remove-Item -LiteralPath $safeStage -Recurse -Force
+        for ($attempt = 1; $attempt -le 3; $attempt++) {
+            try { Remove-Item -LiteralPath $safeStage -Recurse -Force -ErrorAction Stop; break }
+            catch {
+                if ($attempt -eq 3) { Write-Warning "Não foi possível remover a pasta temporária ${safeStage}: $($_.Exception.Message)" }
+                else { Start-Sleep -Seconds 2 }
+            }
+        }
     }
     if ($backupPath -and (Test-Path -LiteralPath $backupPath -PathType Container)) {
         $safeBackup = Assert-ChildPath $backupPath $mapsRoot

@@ -22,6 +22,7 @@
   let selectedSuggestion = -1;
   let lastTelemetry = null;
   let activeInstance = sessionStorage.getItem('minedev-instance') || 'main';
+  let mapDimension = ['overworld', 'nether', 'end'].includes(sessionStorage.getItem('minedev-map-dimension')) ? sessionStorage.getItem('minedev-map-dimension') : 'overworld';
   let pollTimer = null;
   let activityPollTimer = null;
   let propertiesRevision = '';
@@ -157,6 +158,7 @@
 
   async function loadMapStatus(reloadFrame = false) {
     const requestedInstance = activeInstance;
+    const requestedDimension = mapDimension;
     const status = $('#mapStatus');
     const empty = $('#mapEmpty');
     const frameWrap = $('#mapFrameWrap');
@@ -166,10 +168,12 @@
     if (!status || !empty || !frameWrap || !frame || !openLink || !updated) return;
     status.textContent = 'Verificando mapa…';
     try {
-      const payload = await api('map-status');
-      if (requestedInstance !== activeInstance) return;
+      const payload = await api('map-status', { query: `dimension=${encodeURIComponent(requestedDimension)}` });
+      if (requestedInstance !== activeInstance || requestedDimension !== mapDimension) return;
       if (!payload.available) {
-        status.textContent = 'Esta instância ainda não tem um mapa publicado.';
+        status.textContent = requestedDimension === 'overworld'
+          ? 'Esta instância ainda não tem um mapa publicado.'
+          : `O mapa do ${requestedDimension === 'nether' ? 'Nether' : 'End'} ainda não tem chunks salvos acessíveis.`;
         updated.textContent = '';
         empty.hidden = false;
         frameWrap.hidden = true;
@@ -180,14 +184,14 @@
       updated.textContent = payload.generated_at
         ? `Snapshot de ${new Date(payload.generated_at).toLocaleString('pt-BR')}`
         : 'Snapshot disponível';
-      const mapUrl = `map/${encodeURIComponent(requestedInstance)}/?v=${encodeURIComponent(payload.generated_at || 'current')}${reloadFrame ? `&reload=${Date.now()}` : ''}`;
+      const mapUrl = `map/${encodeURIComponent(requestedInstance)}/${requestedDimension === 'overworld' ? '' : requestedDimension + '/'}?v=${encodeURIComponent(payload.generated_at || 'current')}${reloadFrame ? `&reload=${Date.now()}` : ''}`;
       if (reloadFrame || !frame.src.endsWith(mapUrl)) frame.src = mapUrl;
       openLink.href = mapUrl;
       empty.hidden = true;
       frameWrap.hidden = false;
       openLink.hidden = false;
     } catch (error) {
-      if (requestedInstance !== activeInstance) return;
+      if (requestedInstance !== activeInstance || requestedDimension !== mapDimension) return;
       status.textContent = error.status === 401 ? 'Sua sessão expirou.' : `Não foi possível consultar o mapa: ${error.message}`;
       empty.hidden = false;
       frameWrap.hidden = true;
@@ -195,6 +199,15 @@
     }
   }
   $('#mapRefresh')?.addEventListener('click', () => loadMapStatus(true));
+  const mapDimensionPicker = $('#mapDimension');
+  if (mapDimensionPicker) {
+    mapDimensionPicker.value = mapDimension;
+    mapDimensionPicker.addEventListener('change', () => {
+      mapDimension = mapDimensionPicker.value;
+      sessionStorage.setItem('minedev-map-dimension', mapDimension);
+      loadMapStatus(true);
+    });
+  }
 
   function propertiesDirty() {
     return !!propertiesRevision && $('#propertiesEditor').value !== propertiesOriginal;

@@ -22,7 +22,7 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="assets/icon-180.png">
-  <link rel="stylesheet" href="assets/app.css?v=33">
+  <link rel="stylesheet" href="assets/app.css?v=34">
 </head>
 <body class="<?= $isAuthenticated ? 'authenticated' : 'guest' ?>">
   <div class="ambient ambient-one"></div>
@@ -145,7 +145,7 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
           <div class="world-map-card">
             <div class="world-map-toolbar">
               <div class="world-map-title"><strong>Mapa do mundo</strong><span id="mapStatus" role="status">Verificando mapa…</span></div>
-              <div class="world-map-actions"><span class="world-map-updated" id="mapUpdated"></span><button class="ghost-button" id="mapRefresh" type="button">Recarregar mapa ⟳</button><a class="ghost-button" id="mapOpen" href="#" target="_blank" rel="noopener" hidden>Abrir em outra aba ↗</a></div>
+              <div class="world-map-actions"><label class="world-map-dimension-label" for="mapDimension">Dimensão</label><select id="mapDimension" aria-label="Dimensão do mapa"><option value="overworld">Overworld</option><option value="nether">Nether</option><option value="end">End</option></select><span class="world-map-updated" id="mapUpdated"></span><button class="ghost-button" id="mapRefresh" type="button">Recarregar mapa ⟳</button><a class="ghost-button" id="mapOpen" href="#" target="_blank" rel="noopener" hidden>Abrir em outra aba ↗</a></div>
             </div>
             <div class="world-map-empty" id="mapEmpty" hidden><span class="world-map-empty-icon">⌖</span><strong>Mapa ainda não disponível</strong><p>Gere um mapa web a partir de uma cópia consistente do mundo e coloque os arquivos exportados em <code>storage/maps/&lt;id-da-instância&gt;/</code>. Consulte o guia de instalação do MineDev.</p></div>
             <div class="world-map-frame-wrap" id="mapFrameWrap" hidden><iframe id="worldMapFrame" title="Mapa interativo do mundo Minecraft" loading="lazy" referrerpolicy="same-origin" allowfullscreen></iframe></div>
@@ -184,6 +184,6 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
     </div>
   </div>
   <div class="toast-region" id="toastRegion" aria-live="polite"></div>
-<script src="assets/app.js?v=28" defer></script>
+<script src="assets/app.js?v=29" defer></script>
 </body>
 </html>

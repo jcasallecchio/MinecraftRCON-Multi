@@ -2,9 +2,12 @@
 (() => {
   'use strict';
   if (typeof unmined === 'undefined' || !unmined.olMap || typeof ol === 'undefined') throw new Error('uNmINeD indisponível.');
-  const match = location.pathname.match(/\/map\/([a-z0-9][a-z0-9_-]{0,31})(?:\/|$)/i);
+  const match = location.pathname.match(/\/map\/([a-z0-9][a-z0-9_-]{0,31})(?:\/(nether|end))?(?:\/|$)/i);
   if (!match) throw new Error('Instância do mapa não identificada.');
   const instanceId = match[1].toLowerCase();
+  const dimension = (match[2] || 'overworld').toLowerCase();
+  const dimensionId = { overworld: 0, nether: 1, end: 2 }[dimension];
+  const consoleBase = dimension === 'overworld' ? '../../' : '../../../';
   const map = unmined.olMap;
   const snapshotLayer = map.getLayers().item(0);
   const gameToMap = (x, z) => ol.proj.transform([Number(x), Number(z)], unmined.dataProjection, unmined.viewProjection);
@@ -12,7 +15,7 @@
   window.MineDevMap = Object.freeze({ map, gameToMap, mapToGame, centerAt(x, z) { unmined.center([Number(x), Number(z)]); } });
   const css = document.createElement('link');
   css.rel = 'stylesheet';
-  css.href = 'minedev-map-bridge.css?v=37';
+  css.href = 'minedev-map-bridge.css?v=38';
   document.head.append(css);
 
   const panel = document.createElement('section');
@@ -100,7 +103,7 @@
   const seedMarkerIcons = new Map(seedCatalog.map(([, type, iconFile]) => [type, iconFile]));
   dungeonTypes.forEach((type) => seedMarkerIcons.set(type, 'dungeon'));
   const seedMarkerStyleCache = new Map();
-  const iconAssetPath = (iconFile) => '../../assets/icons/' + (/\.[a-z0-9]+$/i.test(iconFile) ? iconFile : iconFile + '.png');
+  const iconAssetPath = (iconFile) => consoleBase + 'assets/icons/' + (/\.[a-z0-9]+$/i.test(iconFile) ? iconFile : iconFile + '.png');
   function getSeedMarkerStyle(type) {
     const iconFile = seedMarkerIcons.get(type) || 'dungeon';
     const resolution = map.getView().getResolution() || 1;
@@ -178,7 +181,7 @@
     if (kind !== 'player') {
       const biome = seedBiomeAt?.({ x, z });
       if (biome) addDetail('Bioma em Y 64', formatBiomeName(biome));
-      const nearest = livePlayers.filter((player) => player.position?.dimension === 0 && Number.isFinite(player.position.x) && Number.isFinite(player.position.z))
+      const nearest = livePlayers.filter((player) => player.position?.dimension === dimensionId && Number.isFinite(player.position.x) && Number.isFinite(player.position.z))
         .map((player) => ({ name: player.name, distance: Math.round(Math.hypot(player.position.x - x, player.position.z - z)) }))
         .sort((a, b) => a.distance - b.distance)[0];
       if (nearest) addDetail('Jogador próximo', `${nearest.name} · ${nearest.distance} blocos`);
@@ -224,7 +227,7 @@
       const block = player.block;
       const valid = position && block && [position.x, position.y, position.z].every(Number.isFinite) &&
         [block.x, block.y, block.z].every(Number.isInteger) && [0, 1, 2].includes(position.dimension);
-      const row = document.createElement(valid && position.dimension === 0 ? 'button' : 'div');
+      const row = document.createElement(valid && position.dimension === dimensionId ? 'button' : 'div');
       row.className = 'minedev-live-row';
       if (row instanceof HTMLButtonElement) {
         row.type = 'button';
@@ -250,7 +253,7 @@
     if (liveRequestPending || (window.frameElement && !window.frameElement.getClientRects().length)) return;
     liveRequestPending = true;
     try {
-      const response = await fetch(`../../api.php?action=map-players&instance_id=${encodeURIComponent(instanceId)}`, { credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' } });
+      const response = await fetch(`${consoleBase}api.php?action=map-players&instance_id=${encodeURIComponent(instanceId)}`, { credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' } });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
       if (data.instance_id !== instanceId) throw new Error('Instância inesperada.');
@@ -300,7 +303,7 @@
       try {
         let data = null;
         for (let attempt = 0; attempt < 360; attempt++) {
-          const response = await fetch(`../../api.php?action=seed-tile&instance_id=${encodeURIComponent(instanceId)}&x=${x}&z=${z}&dungeons=${includeDungeons ? '1' : '0'}&features=${includeFeatures ? '1' : '0'}`, { credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' } });
+          const response = await fetch(`${consoleBase}api.php?action=seed-tile&instance_id=${encodeURIComponent(instanceId)}&x=${x}&z=${z}&dungeons=${includeDungeons ? '1' : '0'}&features=${includeFeatures ? '1' : '0'}`, { credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' } });
           if (response.status === 202) {
             await new Promise((resolve) => window.setTimeout(resolve, Math.max(1000, Number(response.headers.get('Retry-After') || 5) * 1000)));
             continue;
@@ -326,7 +329,7 @@
   async function loadSeedLayer() {
     const status = structureStatus;
     try {
-      const response = await fetch(`../../api.php?action=seed-layer&instance_id=${encodeURIComponent(instanceId)}`, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
+      const response = await fetch(`${consoleBase}api.php?action=seed-layer&instance_id=${encodeURIComponent(instanceId)}`, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error?.message || `Falha HTTP ${response.status}`);
       if (data.edition !== 'bedrock' || data.dimension !== 'overworld' || !Array.isArray(data.structures) ||
@@ -457,7 +460,22 @@
   });
   map.on('pointermove', (event) => { if (!event.dragging) { const point = mapToGame(event.coordinate); hud.textContent = `X ${Math.floor(point.x)} · Z ${Math.floor(point.z)}`; const marker = map.forEachFeatureAtPixel(event.pixel, (candidate) => candidate.get('livePlayer') || candidate.get('seedStructure') ? candidate : null, { hitTolerance: 8 }); map.getTargetElement().style.cursor = marker ? 'pointer' : ''; } });
   document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closeMarkerDetails(); });
-  loadSeedLayer();
+  if (dimension === 'overworld') loadSeedLayer();
+  else {
+    const placeholders = dimension === 'nether'
+      ? [['Fortaleza do Nether', 'nether_fortress.svg'], ['Bastião', 'bastion.svg']]
+      : [['Cidade do End', 'end_city.svg'], ['Portal do End', 'end_gateway.svg']];
+    for (const [label, icon] of placeholders) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'minedev-structure-tile';
+      button.disabled = true;
+      button.title = `${label} · marcadores ainda indisponíveis`;
+      const image = document.createElement('img'); image.src = iconAssetPath(icon); image.alt = '';
+      const name = document.createElement('span'); name.textContent = label;
+      button.append(image, name); structureGrid.append(button);
+    }
+  }
   loadLivePlayers();
   window.setInterval(() => { if (!document.hidden) loadLivePlayers(); }, 5000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) loadLivePlayers(); });

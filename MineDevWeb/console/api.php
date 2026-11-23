@@ -223,15 +223,19 @@ if ($action === 'instances') {
 if ($action === 'map-status') {
     reject_method('GET');
     $instanceId = (string)($_GET['instance_id'] ?? 'main');
+    $dimension = (string)($_GET['dimension'] ?? 'overworld');
+    if (!in_array($dimension, ['overworld', 'nether', 'end'], true)) json_response(['error' => ['code' => 'invalid_dimension', 'message' => 'Dimensão inválida.']], 400);
     if (!preg_match('/^[a-z0-9][a-z0-9_-]{0,31}$/', $instanceId) || bedrock_instance_config($instanceId) === null) {
         json_response(['error' => ['code' => 'invalid_instance', 'message' => 'Instância inválida.']], 400);
     }
     $mapDirectory = STORAGE_DIR . DIRECTORY_SEPARATOR . 'maps' . DIRECTORY_SEPARATOR . $instanceId;
+    if ($dimension !== 'overworld') $mapDirectory .= DIRECTORY_SEPARATOR . $dimension;
     $manifestPath = $mapDirectory . DIRECTORY_SEPARATOR . 'map-info.json';
     $manifest = is_file($manifestPath) ? json_decode((string)file_get_contents($manifestPath), true) : null;
     json_response([
         'available' => is_file($mapDirectory . DIRECTORY_SEPARATOR . 'index.html'),
         'instance_id' => $instanceId,
+        'dimension' => $dimension,
         'world_name' => is_array($manifest) ? (string)($manifest['world_name'] ?? '') : '',
         'generated_at' => is_array($manifest) ? (string)($manifest['snapshot_at'] ?? $manifest['generated_at'] ?? '') : '',
     ]);
