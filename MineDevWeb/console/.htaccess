@@ -3,6 +3,6 @@ RewriteEngine On
 RewriteRule ^map/([a-z0-9][a-z0-9_-]{0,31})/?(.*)$ map_asset.php?instance=$1&asset=$2 [B,QSA,L,NC]
 RewriteRule ^(?:[.]git|storage|tools)(?:/|$) - [F,L,NC]
 
-<FilesMatch "(?i)^(?:[.]|bootstrap[.]php$|README[.]md$)|[.](?:sqlite3?|db|log|jsonl)(?:$|[.])">
+<FilesMatch "(?i)^(?:[.]|bootstrap[.]php$|README[.]md$)|[.](?:sqlite3?|db|log|jsonl|ps1)(?:$|[.])">
   Require all denied
 </FilesMatch>

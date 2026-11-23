@@ -65,7 +65,8 @@ session_write_close();
 header('Content-Type: ' . $mimeTypes[$extension]);
 header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: SAMEORIGIN');
-header('Cache-Control: ' . ($extension === 'html' || basename($fileReal) === 'unmined.map.properties.js' ? 'private, no-store' : 'private, max-age=3600'));
+// Snapshots replace tile files at the same paths; cached tiles must not outlive a refresh.
+header('Cache-Control: ' . ($segments[0] === 'lib' ? 'private, max-age=3600' : 'private, no-store'));
 if ($extension === 'html') {
     header("Content-Security-Policy: default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'self'");
 }

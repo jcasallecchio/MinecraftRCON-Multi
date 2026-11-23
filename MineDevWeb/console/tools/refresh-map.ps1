@@ -276,17 +276,6 @@ try {
         }
         throw
     }
-    if ($hadPreviousMap -and (Test-Path -LiteralPath $backupPath -PathType Container)) {
-        $safeBackup = Assert-ChildPath $backupPath $mapsRoot
-        for ($attempt = 1; $attempt -le 3; $attempt++) {
-            try { Remove-Item -LiteralPath $safeBackup -Recurse -Force -ErrorAction Stop; break }
-            catch {
-                if ($attempt -eq 3) { Write-Warning "Não foi possível remover o mapa antigo em ${safeBackup}: $($_.Exception.Message)" }
-                else { Start-Sleep -Seconds 2 }
-            }
-        }
-        $backupPath = $null
-    }
     Write-Host "Mapa de '$WorldName' publicado em $mapPath."
 } finally {
     if ($stopRequested) {
@@ -332,7 +321,13 @@ try {
         if (-not (Test-Path -LiteralPath $mapPath -PathType Container)) {
             Move-Item -LiteralPath $safeBackup -Destination $mapPath
         } else {
-            Remove-Item -LiteralPath $safeBackup -Recurse -Force
+            for ($attempt = 1; $attempt -le 3; $attempt++) {
+                try { Remove-Item -LiteralPath $safeBackup -Recurse -Force -ErrorAction Stop; break }
+                catch {
+                    if ($attempt -eq 3) { Write-Warning "Não foi possível remover o mapa antigo em ${safeBackup}: $($_.Exception.Message)" }
+                    else { Start-Sleep -Seconds 2 }
+                }
+            }
         }
     }
 }
