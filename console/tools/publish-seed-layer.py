@@ -12,6 +12,8 @@ import math
 from datetime import datetime, timezone
 import zlib
 
+MAP_VIEW_RADIUS = 122880
+
 
 def png_chunk(kind: bytes, data: bytes) -> bytes:
     return struct.pack(">I", len(data)) + kind + data + struct.pack(">I", zlib.crc32(kind + data) & 0xFFFFFFFF)
@@ -70,6 +72,7 @@ def atomic_write(path: Path, data: bytes) -> None:
 def expand_map_extent(path: Path, radius: int) -> None:
     if not path.is_file():
         return
+    radius = max(radius, MAP_VIEW_RADIUS)
     source = path.read_text(encoding="utf-8")
     expected = {"minRegionX": -radius // 512, "minRegionZ": -radius // 512,
                 "maxRegionX": math.ceil(radius / 512) - 1, "maxRegionZ": math.ceil(radius / 512) - 1}

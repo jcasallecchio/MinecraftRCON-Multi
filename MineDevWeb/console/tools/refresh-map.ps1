@@ -16,6 +16,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+$mapExtentRadius = 122880
 $stopRequested = $false
 $snapshotPath = $null
 $stagePath = $null
@@ -134,7 +135,7 @@ try {
 
     New-Item -ItemType Directory -Path $mapsRoot -Force | Out-Null
     $stagePath = Assert-ChildPath (Join-Path $mapsRoot ".stage-$InstanceId-$([guid]::NewGuid().ToString('N'))") $mapsRoot
-    $null = & $RendererPath web render "--world=$snapshotPath" "--output=$stagePath" --dimension=overworld --imageformat=png --zoomout=8 --zoomin=3 --chunkprocessors=2
+    $null = & $RendererPath web render "--world=$snapshotPath" "--output=$stagePath" --dimension=overworld --imageformat=png --zoomout=10 --zoomin=3 --chunkprocessors=2
     if ($LASTEXITCODE -ne 0) {
         throw "uNmINeD não conseguiu renderizar o mundo (código $LASTEXITCODE). O mapa anterior será preservado."
     }
@@ -166,6 +167,7 @@ try {
         Copy-Item -LiteralPath $overlayMarkers -Destination (Join-Path $stagePath 'custom.markers.js') -Force
     }
 
+    $predictionRadius = 0
     $seedMetadata = Join-Path (Join-Path $consoleFull 'storage') "seed-layer-$InstanceId.json"
     if (Test-Path -LiteralPath $seedMetadata -PathType Leaf) {
         $prediction = Get-Content -LiteralPath $seedMetadata -Raw | ConvertFrom-Json
@@ -174,23 +176,24 @@ try {
             -[int]$prediction.min_x -ne ([int]$prediction.width * 8)) {
             throw 'Metadados da previsão pela seed inválidos; o mapa anterior será preservado.'
         }
-        $radius = -[int]$prediction.min_x
-        $propertiesPath = Join-Path $stagePath 'unmined.map.properties.js'
-        $properties = [System.IO.File]::ReadAllText($propertiesPath)
-        $limits = @{ minRegionX = -[int]($radius / 512); minRegionZ = -[int]($radius / 512);
-                     maxRegionX = [int]([math]::Ceiling($radius / 512) - 1); maxRegionZ = [int]([math]::Ceiling($radius / 512) - 1) }
-        foreach ($field in $limits.Keys) {
-            $pattern = '(?m)(\b' + $field + ':\s*)(-?\d+)'
-            $matches = [regex]::Matches($properties, $pattern)
-            if ($matches.Count -ne 1) { throw "Campo $field inesperado no mapa exportado." }
-            $current = [int]$matches[0].Groups[2].Value
-            $limit = [int]$limits[$field]
-            $value = if ($field.StartsWith('min')) { [math]::Min($current, $limit) } else { [math]::Max($current, $limit) }
-            $replacement = [System.Text.RegularExpressions.MatchEvaluator]{ param($match) $match.Groups[1].Value + $value }
-            $properties = [regex]::Replace($properties, $pattern, $replacement)
-        }
-        [System.IO.File]::WriteAllText($propertiesPath, $properties, [System.Text.UTF8Encoding]::new($false))
+        $predictionRadius = -[int]$prediction.min_x
     }
+    $radius = [math]::Max($mapExtentRadius, $predictionRadius)
+    $propertiesPath = Join-Path $stagePath 'unmined.map.properties.js'
+    $properties = [System.IO.File]::ReadAllText($propertiesPath)
+    $limits = @{ minRegionX = -[int]($radius / 512); minRegionZ = -[int]($radius / 512);
+                 maxRegionX = [int]([math]::Ceiling($radius / 512) - 1); maxRegionZ = [int]([math]::Ceiling($radius / 512) - 1) }
+    foreach ($field in $limits.Keys) {
+        $pattern = '(?m)(\b' + $field + ':\s*)(-?\d+)'
+        $matches = [regex]::Matches($properties, $pattern)
+        if ($matches.Count -ne 1) { throw "Campo $field inesperado no mapa exportado." }
+        $current = [int]$matches[0].Groups[2].Value
+        $limit = [int]$limits[$field]
+        $value = if ($field.StartsWith('min')) { [math]::Min($current, $limit) } else { [math]::Max($current, $limit) }
+        $replacement = [System.Text.RegularExpressions.MatchEvaluator]{ param($match) $match.Groups[1].Value + $value }
+        $properties = [regex]::Replace($properties, $pattern, $replacement)
+    }
+    [System.IO.File]::WriteAllText($propertiesPath, $properties, [System.Text.UTF8Encoding]::new($false))
 
     $mapHtml = [System.IO.File]::ReadAllText($indexPath)
     if (-not $mapHtml.Contains('</body>')) { throw 'O exportador mudou o HTML do mapa; a integração não foi instalada.' }
