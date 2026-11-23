@@ -134,7 +134,7 @@ try {
 
     New-Item -ItemType Directory -Path $mapsRoot -Force | Out-Null
     $stagePath = Assert-ChildPath (Join-Path $mapsRoot ".stage-$InstanceId-$([guid]::NewGuid().ToString('N'))") $mapsRoot
-    $null = & $RendererPath web render "--world=$snapshotPath" "--output=$stagePath" --dimension=overworld --imageformat=png --zoomout=5 --zoomin=3 --chunkprocessors=2
+    $null = & $RendererPath web render "--world=$snapshotPath" "--output=$stagePath" --dimension=overworld --imageformat=png --zoomout=8 --zoomin=3 --chunkprocessors=2
     if ($LASTEXITCODE -ne 0) {
         throw "uNmINeD não conseguiu renderizar o mundo (código $LASTEXITCODE). O mapa anterior será preservado."
     }
@@ -194,6 +194,10 @@ try {
 
     $mapHtml = [System.IO.File]::ReadAllText($indexPath)
     if (-not $mapHtml.Contains('</body>')) { throw 'O exportador mudou o HTML do mapa; a integração não foi instalada.' }
+    $propertiesReference = 'src="unmined.map.properties.js"'
+    if (-not $mapHtml.Contains($propertiesReference)) { throw 'A referência às propriedades do mapa não foi encontrada no HTML exportado.' }
+    $mapRevision = [guid]::NewGuid().ToString('N')
+    $mapHtml = $mapHtml.Replace($propertiesReference, "src=`"unmined.map.properties.js?v=$mapRevision`"")
     $mapHtml = $mapHtml.Replace('</body>', "    <script src=`"minedev-map-bridge.js?v=37`"></script>`r`n</body>")
     $utf8WithoutBom = [System.Text.UTF8Encoding]::new($false)
     [System.IO.File]::WriteAllText($indexPath, $mapHtml, $utf8WithoutBom)
