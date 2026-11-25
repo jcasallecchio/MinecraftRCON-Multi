@@ -45,9 +45,9 @@ Um nome DuckDNS aponta para o endereço IP; ele não cria encaminhamento de port
 
 ## Cloudflare DNS
 
-Crie um registro **A** para o IPv4 público e deixe **Proxy status: DNS only** (nuvem cinza). O proxy HTTP normal da Cloudflare não transporta o tráfego UDP do jogo. A porta encaminhada no roteador continua necessária. Um plano/produto específico que ofereça proxy UDP é uma arquitetura separada.
+Se você já atualiza o IP público pelo DuckDNS, crie um registro **CNAME** para o nome do Minecraft apontando ao hostname DuckDNS (por exemplo, `minecraft.seudominio.com` → `seunome.duckdns.org`). Deixe **Proxy status: DNS only** (nuvem cinza). Assim, quando o DuckDNS atualizar o endereço, o nome da Cloudflare acompanhará a mudança. Confirme que o CNAME resolve para o IPv4 WAN atual.
 
-DuckDNS e Cloudflare DNS podem coexistir; cada nome precisa apontar ao IP público atual. Se escolher apontar um CNAME de DuckDNS para seu domínio Cloudflare, mantenha a política DNS-only e confira a atualização do endereço.
+Sem DuckDNS ou outro DDNS, use um registro **A** para o IPv4 público e atualize-o sempre que esse IP mudar. O proxy HTTP normal da Cloudflare não transporta o tráfego UDP do jogo. Em ambos os casos, mantenha o encaminhamento TCP/UDP da porta da instância no roteador. Um produto específico de proxy UDP é uma arquitetura separada.
 
 ## Testar
 
@@ -60,7 +60,7 @@ DuckDNS e Cloudflare DNS podem coexistir; cada nome precisa apontar ao IP públi
 
 | Sintoma | Verificação |
 | --- | --- |
-| Nome resolve para IP antigo | Confira o registro A e o atualizador DuckDNS/Cloudflare. |
+| Nome resolve para IP antigo | Confira o A ou CNAME na Cloudflare, o atualizador DuckDNS e o IP WAN atual. Aguarde o cache DNS expirar ou limpe o cache do dispositivo antes de repetir o teste. |
 | Funciona na rede local, não no 4G/5G | Revise IPv4 público, CGNAT, encaminhamento TCP/UDP, firewall e configuração de dados móveis do Minecraft. |
 | A instância não inicia após escolher outra porta | Verifique se as portas de conexão das instâncias são distintas e se um proxy HTTPS ou outro serviço no host ocupa a porta TCP/UDP escolhida. |
 | O mundo certo não abre | Confira ID, `world_name`, nome da pasta dentro de `worlds/` e versão Bedrock do cliente. |
